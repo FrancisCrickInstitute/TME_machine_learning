@@ -1,0 +1,1 @@
+Test git is setup correctly on RPJ's laptop
