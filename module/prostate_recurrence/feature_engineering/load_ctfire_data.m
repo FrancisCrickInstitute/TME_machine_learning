@@ -30,7 +30,10 @@ function [fibre_matrix discrete_fibres] = load_ctfire_data(ctfire_file,image_fil
 %      string: string
 %   Class support for input minimum_fibre_length:
 %      float: single, double, int: uint8, uint16, uint64
-%   Copyright ****
+%   
+%
+%   This work is licensed under a Creative Commons Attribution 4.0 
+%   International License.
 
 image=imread(image_file);
 [row_dim col_dim] = size(image);
