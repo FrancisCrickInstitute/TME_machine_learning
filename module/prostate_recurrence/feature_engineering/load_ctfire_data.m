@@ -63,10 +63,9 @@ for single_fibre = 1:number_fibres
     x_fibre_all=[x_fibre_all;x_fibre];
     y_fibre_all=[y_fibre_all;y_fibre];
     index_fibre_all=[index_fibre_all;zeros(length(x_fibre),1)+single_fibre];
-
-
 end
 
 linear_index = sub2ind([row_dim,col_dim], y_fibre_all,x_fibre_all);
 fibre_matrix(linear_index)=index_fibre_all;
+
 end
