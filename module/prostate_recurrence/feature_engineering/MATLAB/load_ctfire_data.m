@@ -39,7 +39,7 @@ function [ctfire_fibres fibre_matrix discrete_fibres] = load_ctfire_data(ctfire_
 
 image=imread(image_file);
 [row_dim col_dim] = size(image);
-fibre_matrix=zeros(row_dim,col_dim);
+fibre_matrix=zeros(row_dim,col_dim)+NaN;
 load(ctfire_file);
 fibre_threshold_index = find(data.M.L >= minimum_fibre_length);
 number_fibres = length(fibre_threshold_index);

@@ -1,5 +1,5 @@
 function [discrete_fibre_angles,end_to_end_angle_matrix,end_to_end_x_derivative_matrix,end_to_end_y_derivative_matrix,local_angle_matrix,local_x_derivative_matrix,local_y_derivative_matrix] = fibre_angle(ctfire_fibres, discrete_fibres, fibre_matrix)
-%FIBRE_angle Calculate both local and end_to_end fibre angles for each
+%FIBRE_ANGLE Calculate both local and end_to_end fibre angles for each
 %discrete fibre
 %
 %   [discrete_fibre_angles,end_to_end_angle_matrix,end_to_end_x_derivative_matrix,
