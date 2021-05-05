@@ -16,8 +16,8 @@ function [fibre_skeleton,fibre_branchpoints,fibre_endpoints,fibre_disconnected_b
 %   fibre_endpoints: binary matrix of endpoints
 %   fibre_disconnected_branches: binary matrix of fibres disconnected by 
 %   removal of branchpoints
-
-
+%
+%
 %   The below code for brnchpoints and endpoints appears to work better than
 %   MATLAB's inbuilt functionality for 8 connected neighbourhoods.
 %

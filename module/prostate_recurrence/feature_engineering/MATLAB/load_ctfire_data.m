@@ -1,7 +1,7 @@
-function [fibre_matrix discrete_fibres] = load_ctfire_data(ctfire_file,image_file,minimum_fibre_length)
+function [ctfire_fibres fibre_matrix discrete_fibres] = load_ctfire_data(ctfire_file,image_file,minimum_fibre_length)
 %LOAD_CTFIRE_DATA Load and transform CTFire output fibre data
 %
-%   [fibre_matrix discrete_fibres] = 
+%   [ctfire_fibres fibre_matrix discrete_fibres] = 
 %   load_ctfire_data(ctfire_file,image_file,minimum_fibre_length) loads
 %   fibre level information from the CT-Fire output, creates connected
 %   object fibres from the discontinuous CTFire fibre points and outputs
@@ -16,11 +16,13 @@ function [fibre_matrix discrete_fibres] = load_ctfire_data(ctfire_file,image_fil
 %   are given in CTFire output
 %
 %   Output:
+%   ctfire_fibres: a structure array with x and y coordinates of each fibre
+%   as in the CTFire output%
 %   fibre_matrix: a matrix of the same dimensions of the tile input
 %   image with overlaid fibre information.
 %   discrete_fibres: a structure array with x and y coordinates of each
-%   fibre.
-
+%   fibre to account for discontinuities.
+%
 %   Individual CTFire output fibres are composed of discontinuous points. 
 %   To create corresponding discrete connected fibre objects, a mask of
 %   each fibre is created using MATLAB's insertShape function to create an
@@ -50,8 +52,10 @@ for single_fibre = 1:number_fibres
     fibre_coords = data.Xa(single_fibre_index,:);
     x_fibre=fibre_coords(:,1);
     y_fibre=fibre_coords(:,2);
+    ctfire_fibres(single_fibre).x=x_fibre;
+    ctfire_fibres(single_fibre).y=y_fibre;
+    
     fibre_line=[x_fibre(1:end-1), y_fibre(1:end-1), x_fibre(2:end), y_fibre(2:end)];
-
     mask=zeros(row_dim, col_dim);
     mask=insertShape(mask,'line',fibre_line,'LineWidth',1);
     mask=mask(:,:,1);
