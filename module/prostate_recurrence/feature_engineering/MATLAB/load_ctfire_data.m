@@ -21,7 +21,11 @@ function [ctfire_fibres fibre_matrix discrete_fibres] = load_ctfire_data(ctfire_
 %   fibre_matrix: a matrix of the same dimensions of the tile input
 %   image with overlaid fibre information.
 %   discrete_fibres: a structure array with x and y coordinates of each
-%   fibre to account for discontinuities.
+%   fibre to account for discontinuities. It also includes a distance
+%   mapping showing which point in the original discontinuous CTFire output
+%   vectors, each continous point in discrete_fibres is closest to. This is
+%   used to map angle and curvature information from the CTFire output onto
+%   the continuous fibres.
 %
 %   Individual CTFire output fibres are composed of discontinuous points. 
 %   To create corresponding discrete connected fibre objects, a mask of
@@ -67,6 +71,18 @@ for single_fibre = 1:number_fibres
     x_fibre_all=[x_fibre_all;x_fibre];
     y_fibre_all=[y_fibre_all;y_fibre];
     index_fibre_all=[index_fibre_all;zeros(length(x_fibre),1)+single_fibre];
+    
+    %For the continuous fibre form, discrete_fibre, find the closest point
+    %from ctfire_fibres so that we impose angle information from 
+    %ctfire_fibres to the closest point in discrete_fibres
+    discrete_x_mesh = repmat(discrete_fibres(single_fibre).x,1,length(ctfire_fibres(single_fibre).x));
+    discrete_y_mesh = repmat(discrete_fibres(single_fibre).y,1,length(ctfire_fibres(single_fibre).y));
+    ctfire_x_mesh = repmat(ctfire_fibres(single_fibre).x,1,length(discrete_fibres(single_fibre).x))';
+    ctfire_y_mesh = repmat(ctfire_fibres(single_fibre).y,1,length(discrete_fibres(single_fibre).y))';
+    distance_transform = ((discrete_x_mesh-ctfire_x_mesh).^2+(discrete_y_mesh-ctfire_y_mesh).^2).^0.5;
+    [~,ctfire_point] = min(distance_transform,[],2);
+    discrete_fibres(single_fibre).ctfire_point = ctfire_point;
+    
 end
 
 linear_index = sub2ind([row_dim,col_dim], y_fibre_all,x_fibre_all);

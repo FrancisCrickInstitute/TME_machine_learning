@@ -8,7 +8,7 @@ function [fibre_skeleton,fibre_branchpoints,fibre_endpoints,fibre_disconnected_b
 %   extracts a barnchpoint map, endpoint map and disconnected branches map.
 %
 %   Input:
-%   fibre_matrix: matrix of labelled discret fibrese. 
+%   fibre_matrix: matrix of labelled discret fibres. 
 %
 %   Output:
 %   fibre_skeleton: binary matrix of skeletonised fibre network
@@ -18,7 +18,7 @@ function [fibre_skeleton,fibre_branchpoints,fibre_endpoints,fibre_disconnected_b
 %   removal of branchpoints
 %
 %
-%   The below code for brnchpoints and endpoints appears to work better than
+%   The below code for branchpoints and endpoints appears to work better than
 %   MATLAB's inbuilt functionality for 8 connected neighbourhoods.
 %
 %   Class support for input fibre_matrix:

@@ -8,9 +8,10 @@ function [discrete_fibre_angles,end_to_end_angle_matrix,end_to_end_x_derivative_
 %   fibre_angle(ctfire_fibres, discrete_fibres, fibre_matrix)
 %   calculates fibre angles from CTFire output, both locally and for the
 %   end_to_end fibre. Output includes a structure array of all
-%   dicrete fibre x and y derivatives and angles for both local and end_to_end
-%   calculations. Equivalent matrices that includes x and y derivatives or 
-%   angle for every fibre are also output.  
+%   dicrete fibre x and y derivatives (normalised to be unit vectors in x 
+%   and y)and angles for both local and end_to_end calculations. Equivalent
+%   matrices that includes x and y derivatives or angle for every fibre are
+%   also output.  
 %
 %   Input:
 %   ctfire_fibres: Structure array of discrete CTFire fibres. Used to 
@@ -27,15 +28,20 @@ function [discrete_fibre_angles,end_to_end_angle_matrix,end_to_end_x_derivative_
 %   end_to_end_angle_matrix: matrix of all fibres with end to end angles 
 %   for all fibre locations found in discrete_fibres 
 %   end_to_end_x_derivative_matrix: matrix of all fibres with end to end x 
-%   derivative values for all fibre locations found in discrete_fibres 
+%   derivative values for all fibre locations found in discrete_fibres. 
+%   Normalised to be unit vector in x and y 
 %   end_to_end_y_derivative_matrix: matrix of all fibres with end to end y 
-%   derivative values for all fibre locations found in discrete_fibres 
+%   derivative values for all fibre locations found in discrete_fibres
+%   Normalised to be unit vector in x and y 
 %   local_angle_matrix: matrix of all fibres with local angles 
-%   for all fibre locations found in discrete_fibres 
+%   for all fibre locations found in discrete_fibres
+%   Normalised to be unit vector in x and y 
 %   local_x_derivative_matrix: matrix of all fibres with local x 
-%   derivative values for all fibre locations found in discrete_fibres 
+%   derivative values for all fibre locations found in discrete_fibres
+%   Normalised to be unit vector in x and y 
 %   local_y_derivative_matrix: matrix of all fibres with local y 
 %   derivative values for all fibre locations found in discrete_fibres
+%   Normalised to be unit vector in x and y 
 %
 %   All angles are calculated in radians. For the purposes of matrix elements 
 %   where fibres overlap, the average derivative or angle is found from all
@@ -69,28 +75,34 @@ local_x_derivative_matrix=zeros(size(fibre_matrix))+NaN;
 local_y_derivative_matrix=zeros(size(fibre_matrix))+NaN;
 
 for I=1:length(ctfire_fibres)
-    %For the continuous fibre form, discrete_fibre, find the closest point
-    %from ctfire_fibres so that we impose angle information from 
-    %ctfire_fibres to the closest point in discrete_fibres
+
     ctfire_fibre = ctfire_fibres(I);
     discrete_fibre=discrete_fibres(I);
-    discrete_x_mesh = repmat(discrete_fibre.x,1,length(ctfire_fibre.x));
-    discrete_y_mesh = repmat(discrete_fibre.y,1,length(ctfire_fibre.y));
-    ctfire_x_mesh = repmat(ctfire_fibre.x,1,length(discrete_fibre.x))';
-    ctfire_y_mesh = repmat(ctfire_fibre.y,1,length(discrete_fibre.y))';
-    distance_transform = ((discrete_x_mesh-ctfire_x_mesh).^2+(discrete_y_mesh-ctfire_y_mesh).^2).^0.5;
-    [~,ctfire_point] = min(distance_transform,[],2);
+    ctfire_point = discrete_fibres(I).ctfire_point; %Mapping from discontinuous to continuous fibres
     
     
     end_to_end_fibre_x_derivative=ctfire_fibre.x(end)-ctfire_fibre.x(1);
     end_to_end_fibre_y_derivative=ctfire_fibre.y(end)-ctfire_fibre.y(1);
+    
+    end_to_end_fibre_y_derivative(end_to_end_fibre_x_derivative<0)=-1*end_to_end_fibre_y_derivative(end_to_end_fibre_x_derivative<0);
+    end_to_end_fibre_x_derivative(end_to_end_fibre_x_derivative<0)=-1*end_to_end_fibre_x_derivative(end_to_end_fibre_x_derivative<0);
+    end_to_end_vector_magnitude=(end_to_end_fibre_x_derivative.^2+end_to_end_fibre_y_derivative.^2).^0.5;
+    end_to_end_fibre_x_derivative=end_to_end_fibre_x_derivative./end_to_end_vector_magnitude;
+    end_to_end_fibre_y_derivative=end_to_end_fibre_y_derivative./end_to_end_vector_magnitude;
     end_to_end_derivative_ratio = end_to_end_fibre_y_derivative./((end_to_end_fibre_x_derivative.^2+end_to_end_fibre_y_derivative.^2).^0.5);
+    end_to_end_derivative_ratio((end_to_end_fibre_x_derivative==0)&(end_to_end_fibre_y_derivative==0))=1;%Where divide by zero set to 1 as numerator and denominator are same order of magnitude
     end_to_end_fibre_angle = acos(end_to_end_derivative_ratio);
        
    
     local_fibre_x_derivative=diff(ctfire_fibre.x);
     local_fibre_y_derivative=diff(ctfire_fibre.y);
+    local_fibre_y_derivative(local_fibre_x_derivative<0)=-1*local_fibre_y_derivative(local_fibre_x_derivative<0);
+    local_fibre_x_derivative(local_fibre_x_derivative<0)=-1*local_fibre_x_derivative(local_fibre_x_derivative<0);
+    local_fibre_magnitude=(local_fibre_x_derivative.^2+local_fibre_y_derivative.^2).^0.5;
+    local_fibre_x_derivative=local_fibre_x_derivative./local_fibre_magnitude;
+    local_fibre_y_derivative=local_fibre_y_derivative./local_fibre_magnitude;
     local_derivative_ratio = local_fibre_y_derivative./((local_fibre_x_derivative.^2+local_fibre_y_derivative.^2).^0.5);
+    local_derivative_ratio((local_fibre_x_derivative==0)&(local_fibre_y_derivative==0))=1;%Where divide by zero set to 1 as numerator and denominator are same order of magnitude
     local_fibre_angle = acos(local_derivative_ratio);
     local_fibre_x_derivative(end+1,1)=local_fibre_x_derivative(end);
     local_fibre_y_derivative(end+1,1)=local_fibre_y_derivative(end);
