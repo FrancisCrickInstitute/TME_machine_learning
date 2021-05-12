@@ -139,11 +139,11 @@ for J=1:length(find_overlaps)
     
     %Calculate the angles from the average x and y vectors rather than the 
     % angle itself (to account for periodicity in angle).
-    [mean_end_to_end_x_derivative,mean_end_to_end_y_derivative] = vector_normalisation(mean_end_to_end_x_derivative,mean_end_to_end_y_derivative)
+    [mean_end_to_end_x_derivative,mean_end_to_end_y_derivative] = vector_normalisation(mean_end_to_end_x_derivative,mean_end_to_end_y_derivative);
     %end_to_end_fibre_angle = atan(mean_end_to_end_y_derivative./mean_end_to_end_x_derivative);
     end_to_end_fibre_angle = acos(mean_end_to_end_y_derivative);
     end_to_end_angle_matrix(GR(find_overlaps(J))) = end_to_end_fibre_angle;
-    [mean_local_x_derivative,mean_local_y_derivative] = vector_normalisation(mean_local_x_derivative,mean_local_y_derivative)
+    [mean_local_x_derivative,mean_local_y_derivative] = vector_normalisation(mean_local_x_derivative,mean_local_y_derivative);
 %    local_fibre_angle = atan(mean_local_y_derivative./mean_local_x_derivative);
     local_fibre_angle = acos(mean_local_y_derivative);
     local_angle_matrix(GR(find_overlaps(J))) = local_fibre_angle;
