@@ -54,25 +54,14 @@ function [end_to_end_angle_continuum,end_to_end_x_derivative_continuum,end_to_en
 %   International License.
 end_to_end_x_derivative_continuum  = inpaint_nans(end_to_end_x_derivative_matrix,4); %Use spring metaphor method for inpainting
 end_to_end_y_derivative_continuum  = inpaint_nans(end_to_end_y_derivative_matrix,4);
-end_to_end_y_derivative_continuum(end_to_end_x_derivative_continuum<0)=-1*end_to_end_y_derivative_continuum(end_to_end_x_derivative_continuum<0);
-end_to_end_x_derivative_continuum(end_to_end_x_derivative_continuum<0)=-1*end_to_end_x_derivative_continuum(end_to_end_x_derivative_continuum<0);
-end_to_end_vector_magnitude=(end_to_end_x_derivative_continuum.^2+end_to_end_y_derivative_continuum.^2).^0.5;
-end_to_end_x_derivative_continuum=end_to_end_x_derivative_continuum./end_to_end_vector_magnitude;
-end_to_end_y_derivative_continuum=end_to_end_y_derivative_continuum./end_to_end_vector_magnitude;
-end_to_end_derivative_ratio = end_to_end_y_derivative_continuum./((end_to_end_x_derivative_continuum.^2+end_to_end_y_derivative_continuum.^2).^0.5);
-end_to_end_derivative_ratio((end_to_end_x_derivative_continuum==0)&(end_to_end_y_derivative_continuum==0))=1;%Where divide by zero set to 1 as numerator and denominator are same order of magnitude
-end_to_end_angle_continuum = acos(end_to_end_derivative_ratio);
-
+[end_to_end_x_derivative_continuum,end_to_end_y_derivative_continuum] = vector_normalisation(end_to_end_x_derivative_continuum,end_to_end_y_derivative_continuum);
+%end_to_end_angle_continuum = atan(end_to_end_y_derivative_continuum./end_to_end_x_derivative_continuum);
+end_to_end_angle_continuum = acos(end_to_end_y_derivative_continuum);
 local_x_derivative_continuum  = inpaint_nans(local_x_derivative_matrix,4);
 local_y_derivative_continuum  = inpaint_nans(local_y_derivative_matrix,4);
-local_y_derivative_continuum(local_x_derivative_continuum<0)=-1*local_y_derivative_continuum(local_x_derivative_continuum<0);
-local_x_derivative_continuum(local_x_derivative_continuum<0)=-1*local_x_derivative_continuum(local_x_derivative_continuum<0);
-local_vector_magnitude=(local_x_derivative_continuum.^2+local_y_derivative_continuum.^2).^0.5;
-local_x_derivative_continuum=local_x_derivative_continuum./local_vector_magnitude;
-local_y_derivative_continuum=local_y_derivative_continuum./local_vector_magnitude;
-local_derivative_ratio = local_y_derivative_continuum./((local_x_derivative_continuum.^2+local_y_derivative_continuum.^2).^0.5);
-local_derivative_ratio((local_x_derivative_continuum==0)&(local_y_derivative_continuum==0))=1;%Where divide by zero set to 1 as numerator and denominator are same order of magnitude
-local_angle_continuum = acos(local_derivative_ratio);   
+[local_x_derivative_continuum,local_y_derivative_continuum] = vector_normalisation(local_x_derivative_continuum,local_y_derivative_continuum);
+%local_angle_continuum = atan(local_y_derivative_continuum./local_x_derivative_continuum);
+local_angle_continuum = acos(local_y_derivative_continuum);
 
 end
 

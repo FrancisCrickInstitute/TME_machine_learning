@@ -79,32 +79,19 @@ for I=1:length(ctfire_fibres)
     ctfire_fibre = ctfire_fibres(I);
     discrete_fibre=discrete_fibres(I);
     ctfire_point = discrete_fibres(I).ctfire_point; %Mapping from discontinuous to continuous fibres
-    
-    
     end_to_end_fibre_x_derivative=ctfire_fibre.x(end)-ctfire_fibre.x(1);
     end_to_end_fibre_y_derivative=ctfire_fibre.y(end)-ctfire_fibre.y(1);
     
-    end_to_end_fibre_y_derivative(end_to_end_fibre_x_derivative<0)=-1*end_to_end_fibre_y_derivative(end_to_end_fibre_x_derivative<0);
-    end_to_end_fibre_x_derivative(end_to_end_fibre_x_derivative<0)=-1*end_to_end_fibre_x_derivative(end_to_end_fibre_x_derivative<0);
-    end_to_end_vector_magnitude=(end_to_end_fibre_x_derivative.^2+end_to_end_fibre_y_derivative.^2).^0.5;
-    end_to_end_fibre_x_derivative=end_to_end_fibre_x_derivative./end_to_end_vector_magnitude;
-    end_to_end_fibre_y_derivative=end_to_end_fibre_y_derivative./end_to_end_vector_magnitude;
-    end_to_end_derivative_ratio = end_to_end_fibre_y_derivative./((end_to_end_fibre_x_derivative.^2+end_to_end_fibre_y_derivative.^2).^0.5);
-    end_to_end_derivative_ratio((end_to_end_fibre_x_derivative==0)&(end_to_end_fibre_y_derivative==0))=1;%Where divide by zero set to 1 as numerator and denominator are same order of magnitude
-    end_to_end_fibre_angle = acos(end_to_end_derivative_ratio);
+    [end_to_end_fibre_x_derivative,end_to_end_fibre_y_derivative] = vector_normalisation(end_to_end_fibre_x_derivative,end_to_end_fibre_y_derivative);
+    %end_to_end_fibre_angle = atan(end_to_end_fibre_y_derivative./end_to_end_fibre_x_derivative);
+    end_to_end_fibre_angle = acos(end_to_end_fibre_y_derivative);
        
-   
     local_fibre_x_derivative=diff(ctfire_fibre.x);
     local_fibre_y_derivative=diff(ctfire_fibre.y);
-    local_fibre_y_derivative(local_fibre_x_derivative<0)=-1*local_fibre_y_derivative(local_fibre_x_derivative<0);
-    local_fibre_x_derivative(local_fibre_x_derivative<0)=-1*local_fibre_x_derivative(local_fibre_x_derivative<0);
-    local_fibre_magnitude=(local_fibre_x_derivative.^2+local_fibre_y_derivative.^2).^0.5;
-    local_fibre_x_derivative=local_fibre_x_derivative./local_fibre_magnitude;
-    local_fibre_y_derivative=local_fibre_y_derivative./local_fibre_magnitude;
-    local_derivative_ratio = local_fibre_y_derivative./((local_fibre_x_derivative.^2+local_fibre_y_derivative.^2).^0.5);
-    local_derivative_ratio((local_fibre_x_derivative==0)&(local_fibre_y_derivative==0))=1;%Where divide by zero set to 1 as numerator and denominator are same order of magnitude
-    local_fibre_angle = acos(local_derivative_ratio);
-    local_fibre_x_derivative(end+1,1)=local_fibre_x_derivative(end);
+    [local_fibre_x_derivative,local_fibre_y_derivative] = vector_normalisation(local_fibre_x_derivative,local_fibre_y_derivative);
+ %   local_fibre_angle = atan(local_fibre_y_derivative./local_fibre_x_derivative);
+    local_fibre_angle = acos(local_fibre_y_derivative);
+    local_fibre_x_derivative(end+1,1)=local_fibre_x_derivative(end);%End fibre point given same vector angle as preceding point
     local_fibre_y_derivative(end+1,1)=local_fibre_y_derivative(end);
     local_fibre_angle(end+1,1)=local_fibre_angle(end);
     
@@ -152,12 +139,15 @@ for J=1:length(find_overlaps)
     
     %Calculate the angles from the average x and y vectors rather than the 
     % angle itself (to account for periodicity in angle).
-    end_to_end_derivative_ratio = mean_end_to_end_y_derivative./((mean_end_to_end_x_derivative.^2+mean_end_to_end_y_derivative.^2).^0.5);
-    end_to_end_fibre_angle = acos(end_to_end_derivative_ratio);
-    local_derivative_ratio = mean_local_y_derivative./((mean_local_x_derivative.^2+mean_local_y_derivative.^2).^0.5);
-    local_fibre_angle = acos(local_derivative_ratio);    
+    [mean_end_to_end_x_derivative,mean_end_to_end_y_derivative] = vector_normalisation(mean_end_to_end_x_derivative,mean_end_to_end_y_derivative)
+    %end_to_end_fibre_angle = atan(mean_end_to_end_y_derivative./mean_end_to_end_x_derivative);
+    end_to_end_fibre_angle = acos(mean_end_to_end_y_derivative);
     end_to_end_angle_matrix(GR(find_overlaps(J))) = end_to_end_fibre_angle;
+    [mean_local_x_derivative,mean_local_y_derivative] = vector_normalisation(mean_local_x_derivative,mean_local_y_derivative)
+%    local_fibre_angle = atan(mean_local_y_derivative./mean_local_x_derivative);
+    local_fibre_angle = acos(mean_local_y_derivative);
     local_angle_matrix(GR(find_overlaps(J))) = local_fibre_angle;
+   
 end
 
 end
