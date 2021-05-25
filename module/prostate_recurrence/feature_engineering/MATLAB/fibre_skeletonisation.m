@@ -27,7 +27,7 @@ function [fibre_skeleton,fibre_branchpoints,fibre_endpoints,fibre_disconnected_b
 %
 %   This work is licensed under a Creative Commons Attribution 4.0 
 %   International License.
-
+fibre_matrix(isnan(fibre_matrix))=0;
 fibre_matrix = logical(fibre_matrix);
 fibre_skeleton = bwmorph(fibre_matrix,'skel',Inf);
 fibre_branchpoints=bwlookup(fibre_skeleton,  makelut(@(x) sum(x(:))>=4 & x(5)==1,3));
