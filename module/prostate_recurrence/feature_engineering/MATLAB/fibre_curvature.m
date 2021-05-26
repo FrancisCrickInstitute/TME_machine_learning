@@ -46,8 +46,8 @@ for I=1:length(ctfire_fibres)
     discrete_fibre=discrete_fibres(I);
     ctfire_point = discrete_fibres(I).ctfire_point; %Mapping from discontinuous to continuous fibres
     Vertices=[ctfire_fibre.x,ctfire_fibre.y];
-    curvature=LineCurvature2D(Vertices);
-    discrete_fibre_curvature(I).curvature =  abs(curvature(ctfire_point));
+    curvature=abs(LineCurvature2D(Vertices));
+    discrete_fibre_curvature(I).curvature =  curvature(ctfire_point);
     
     linearInd = sub2ind(size(fibre_matrix),discrete_fibre.y,discrete_fibre.x);
     curvature_matrix(linearInd)=discrete_fibre_curvature(I).curvature;
