@@ -1,25 +1,45 @@
 """# a set of functions for tiling of whole slide image
-## read_image(...) to read whole slide image using methods such as czifile
-## create_tiles(...) to create image tiles based on the whole slide image
-## save_tiles(...) to save image tiles as .tif files
-This script can be run standalone or called from another script
+
+## read_image(...) to read whole slide image using czifile library.
+This function expects the full absolute path to a .czi image image and a valid
+tiling method as input parameters. Currently, the only tiling method implemented
+is using czifile library. Note that an issue remains that not all Python versions
+are compatible with czifile. Python 3.7.x was used to succesfully generate image tiles.
+This function returns a numpy array of the whole slide image.
+
+## create_tiles(...) to create image tiles based on the whole slide image.
+This function expects a numpy array of the whole slide image and a user-defined
+tile size as input parameters. By default, the tile size is set to be 512 pixels.
+This function returns a dictionary of image tiles, each stored as a numpy array, and
+the number of rows and columns of the tiled whole slide image.
+
+## save_tiles(...) to save image tiles as .tif files.
+This function expects a dictionary of image tiles, image id, image type, the number
+of rows and columns of the tiled whole slide image, path to save the output images, and
+the tile size as input parameters. The name of output image files will contain information
+about image id, image type ("HE" or "PSR"), spatial location of the image tile within the
+whole slide image, tile size used for tiling.
+Note that a simple way that checks whether all pixels are close to white or to black
+is used to exclude background image tiles from being saved.
+This function saves output images using Image module from the PIL library.
+
 """
 
 import os
+from typing import Dict, Tuple
+
 import numpy as np
 from czifile import CziFile  # pip install czifile
 from PIL import Image
-from typing import Dict, Tuple, List
 
 
-def read_image(
-    path_to_img: str, method: str = "czifile", allowed_methods: List[str] = ["czifile"]
-) -> np.array:
+def read_image(path_to_img: str, method: str = "czifile") -> np.array:
     """read .czi image into a numpy array
     note: need implementation of alterative methods
     for reading .czi image
     czifile method reads by default the image with
     highest resolution in the series
+    allowed methods include "czifile"
 
     Parameters
     ----------
@@ -27,14 +47,14 @@ def read_image(
         The full path to the image file
     method : str, optional
         Method used for reading the image, by default "czifile"
-    allowed_methods : List[str], optional
-        Allowed methods for reading the image, by default ["czifile"]
 
     Returns
     -------
     np.array
         The whole slide image as Numpy array
     """
+
+    allowed_methods = ["czifile"]
 
     if method not in allowed_methods:
         print(f"Please use one of the allowed methods : {allowed_methods}")
@@ -154,30 +174,3 @@ def save_tiles(
                     ),
                 )
             )
-
-
-if __name__ == "__main__":
-
-    TILE_SIZE = 512
-    # user-defined path to image
-    # (can change to iterattion over files in a folder)
-    data_path = "../../2021m04__image_processing/2021_02_12__RecognizedCode-1.czi"
-    save_path = data_path + f"_tile_size_{TILE_SIZE}"
-    os.makedirs(save_path, exist_ok=True)
-    # read whole slide image
-    print("1. read image")
-    img = read_image(data_path)
-    print((img == 0).all())
-    # create image tiles
-    print("2. create image tiles")
-    (dict_img_tiles, nrow, ncol) = create_tiles(img[0, 0], size=512)
-    # save image tiles
-    print("3. save image tiles")
-    save_tiles(
-        dict_img_tiles=dict_img_tiles,
-        img_id="2021_02_12__RecognizedCode-1",
-        img_type="HE",
-        nrow=nrow,
-        ncol=ncol,
-        save_path=save_path,
-    )
