@@ -32,11 +32,11 @@ in a .csv file.
 """
 
 import os
-from typing import Dict, Tuple, List
+from typing import Dict, List, Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from PIL import Image
 from skimage.feature import greycomatrix, greycoprops
@@ -114,7 +114,7 @@ def construct_glcm(
 
 
 def extract_glcm_features(
-    matrix: np.array, features: Tuple[str]
+    matrix: np.ndarray, features: Tuple[str]
 ) -> Dict[str, np.ndarray]:
     """extract quantitative features based on the input GLCM
     This function inputs the GLCM in the format of a numpy array, namely,
@@ -126,7 +126,7 @@ def extract_glcm_features(
 
     Parameters
     ----------
-    matrix : np.array
+    matrix : np.ndarray
         The GLCM with respect to different levels of distances and angles,
         i.e., P[i,j,d,theta]
     features : Tuple[str]
