@@ -114,11 +114,11 @@ def create_tiles(
 
 def save_tiles(
     dict_img_tiles: Dict[int, np.array],
-    img_id: str,
-    img_type: str,
     nrow: int,
     ncol: int,
     save_path: str,
+    img_id: str = "",
+    img_type: str = "",
     size: int = 512,
 ):
     """save image tiles into user-defined directory
@@ -147,6 +147,7 @@ def save_tiles(
         Tile size in pixels, by default 512
     """
 
+    zero_padding = 5
     for irow in range(nrow):
         if irow % 5 == 0:
             print(f"... saving {ncol} tiles in row {irow + 1} ...")
@@ -166,11 +167,46 @@ def save_tiles(
 
             # save image tile
             im = Image.fromarray(img_tile)
-            im.save(
-                os.path.join(
-                    save_path,
-                    "{}_{}_image_tile_{}_{}.tif".format(
-                        img_type, img_id, str(irow).zfill(3), str(icol).zfill(3)
-                    ),
+            if img_id and img_type:
+                im.save(
+                    os.path.join(
+                        save_path,
+                        "{}_{}_image_tile_{}_{}.tif".format(
+                            img_type,
+                            img_id,
+                            str(irow).zfill(zero_padding),
+                            str(icol).zfill(zero_padding),
+                        ),
+                    )
                 )
-            )
+            elif img_id and not img_type:
+                im.save(
+                    os.path.join(
+                        save_path,
+                        "{}_image_tile_{}_{}.tif".format(
+                            img_id,
+                            str(irow).zfill(zero_padding),
+                            str(icol).zfill(zero_padding),
+                        ),
+                    )
+                )
+            elif not img_id and img_type:
+                im.save(
+                    os.path.join(
+                        save_path,
+                        "{}_image_tile_{}_{}.tif".format(
+                            img_type,
+                            str(irow).zfill(zero_padding),
+                            str(icol).zfill(zero_padding),
+                        ),
+                    )
+                )
+            else:
+                im.save(
+                    os.path.join(
+                        save_path,
+                        "image_tile_{}_{}.tif".format(
+                            str(irow).zfill(zero_padding), str(icol).zfill(zero_padding)
+                        ),
+                    )
+                )
