@@ -133,16 +133,16 @@ def save_tiles(
     dict_img_tiles : Dict[int, np.array]
         a Dictionary of
         [tile id : tile as Numpy array]
-    img_id : str
-        image identifier, e.g., CHIIP id
-    img_type : str
-        image type, e.g., "PSR" or "HE"
     nrow : int
         the number of rows of image tiles
     ncol : int
         the number of columns of image tiles
     save_path : str
         path to save the tiles into
+    img_id : str, optional
+        image identifier, e.g., CHIIP id, by default ''
+    img_type : str, optional
+        image type, e.g., "PSR" or "HE", by default ''
     size : int, optional
         Tile size in pixels, by default 512
     """
@@ -155,15 +155,15 @@ def save_tiles(
             tile_id = irow * ncol + icol
             img_tile = dict_img_tiles[tile_id]
 
-            if irow == 10 and icol == 10:
-                print(np.sum(img_tile > 200))
+            #if irow == 10 and icol == 10:
+            #    print(np.sum(img_tile > 200))
 
             # if x% of values are near 255 (white space) or near 0, continue
-            if (
-                np.sum(img_tile > 200) / size ** 2 / 3
-                + np.sum(img_tile < 30) / size ** 2 / 3
-            ) > 0.95:
-                continue
+            #if (
+            #    np.sum(img_tile > 200) / size ** 2 / 3
+            #    + np.sum(img_tile < 30) / size ** 2 / 3
+            #) > 0.95:
+            #    continue
 
             # save image tile
             im = Image.fromarray(img_tile)
