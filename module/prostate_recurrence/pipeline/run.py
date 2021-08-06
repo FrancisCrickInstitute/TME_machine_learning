@@ -11,7 +11,6 @@
 (7) [data_exploration/Python] perform stitching to construct whole slide feature heatmaps
 """
 
-from module.prostate_recurrence.image_processing import colour_deconvolution
 import os
 import sys
 from glob import glob
