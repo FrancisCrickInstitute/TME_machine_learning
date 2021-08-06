@@ -12,6 +12,11 @@
 """
 
 import os
+import sys
+module_path = os.path.abspath(os.path.join('../../../module/'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
 from glob import glob
 from prostate_recurrence.image_processing import tiling
 import argparse
@@ -56,9 +61,12 @@ PROCESSED_DATA_PATH = args.processed_data_path
 TILE_SIZE = args.tile_size
 
 
+assert RAW_DATA_PATH and PROCESSED_DATA_PATH
+
+
 def run_tiling():
     do_batch_processing = True
-    if f"*{RAW_DATA_TYPE}.czi" in RAW_DATA_PATH:
+    if f".czi" in RAW_DATA_PATH:
         do_batch_processing = False
 
     if do_batch_processing:
@@ -67,7 +75,7 @@ def run_tiling():
         data_paths = [RAW_DATA_PATH]
 
     for data_path in data_paths:
-        data_id = "_".join(data_path.split("/").split("_")[:2])
+        data_id = "_".join(data_path.split("/")[-1].split("_")[:2])
         output_directory_processed_raw_tiling = os.path.join(
             PROCESSED_DATA_PATH,
             data_id,
@@ -93,3 +101,7 @@ def run_tiling():
 def run_colour_deconvolution():
 
     pass
+
+
+run_tiling()
+
