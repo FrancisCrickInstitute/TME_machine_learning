@@ -93,10 +93,10 @@ def deconvolve_image(image_arr: np.ndarray) -> Tuple[np.ndarray, List[str]]:
     """
     stain_color_map = {
         "psr": [0.174309, 0.8309804, 0.5282877],
-        "nuc1": [0.37535256, 0.61940926, 0.6852346],
-        "nuc2": [0.22552978, 0.6076955, 0.7614739],
+        "nucleus1": [0.37535256, 0.61940926, 0.6852346],
+        "nucleus2": [0.22552978, 0.6076955, 0.7614739],
     }
-    stains = ["psr", "nuc1", "nuc2"]
+    stains = ["psr", "nucleus1", "nucleus2"]
     W = np.array([stain_color_map[st] for st in stains]).T
 
     imDeconvolved = htk.preprocessing.color_deconvolution.color_deconvolution(
@@ -110,6 +110,7 @@ def deconvolve_image(image_arr: np.ndarray) -> Tuple[np.ndarray, List[str]]:
 def save_deconvolved_images(
     image_deconvolved: np.ndarray,
     image_path: str,
+    output_directory: str,
     stains: List[str],
     cmap_psr: matplotlib.colors.LinearSegmentedColormap,
 ) -> None:
@@ -122,6 +123,8 @@ def save_deconvolved_images(
         of the image should be N x M x 3.
     image_path : str
         path to the raw image
+    output_directory : str
+        directory to save deconvolved images into
     stains : List[str]
         a list of names for the stains
     cmap_psr : matplotlib.colors.LinearSegmentedColormap
@@ -130,8 +133,9 @@ def save_deconvolved_images(
     """
 
     for channel, stain in enumerate(stains):
+        output_subdirectory = os.path.join(output_directory, stain)
         save_path = os.path.join(
-            os.path.dirname(image_path),
+            output_subdirectory,
             os.path.basename(image_path).split(".")[0] + f"_{stain}.tif",
         )
 
@@ -140,8 +144,9 @@ def save_deconvolved_images(
         stained_image.save(save_path)
 
         if stain == "psr":
-            plt.figure(figsize=(1.707, 1.707), dpi=300)
+            fig = plt.figure(figsize=(1.707, 1.707), dpi=300)
+            ax = fig.add_axes([0, 0, 1, 1])
+            ax.imshow(stained_image, cmap=cmap_psr)
             plt.axis("off")
-            plt.imshow(stained_image, cmap=cmap_psr)
             plt.savefig(save_path + "_coloured.tif", dpi=300)
             plt.close()
