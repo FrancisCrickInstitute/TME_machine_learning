@@ -11,15 +11,19 @@
 (7) [data_exploration/Python] perform stitching to construct whole slide feature heatmaps
 """
 
+from module.prostate_recurrence.image_processing import colour_deconvolution
 import os
 import sys
-module_path = os.path.abspath(os.path.join('../../../module/'))
+from glob import glob
+from PIL import Image
+import numpy as np
+import argparse
+
+module_path = os.path.abspath(os.path.join("../../../module/"))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from glob import glob
-from prostate_recurrence.image_processing import tiling
-import argparse
+from prostate_recurrence.image_processing import tiling, colour_deconvolution
 
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline")
 parser.add_argument(
@@ -66,7 +70,7 @@ assert RAW_DATA_PATH and PROCESSED_DATA_PATH
 
 def run_tiling():
     do_batch_processing = True
-    if f".czi" in RAW_DATA_PATH:
+    if ".czi" in RAW_DATA_PATH:
         do_batch_processing = False
 
     if do_batch_processing:
@@ -99,9 +103,52 @@ def run_tiling():
 
 
 def run_colour_deconvolution():
+    do_batch_processing = True
+    if ".czi" in RAW_DATA_PATH:
+        do_batch_processing = False
 
-    pass
+    if do_batch_processing:
+        data_paths = glob(f"*{RAW_DATA_TYPE}.czi")
+    else:
+        data_paths = [RAW_DATA_PATH]
+
+    for data_path in data_paths:
+        data_id = "_".join(data_path.split("/")[-1].split("_")[:2])
+        output_directory_processed_raw_tiling = os.path.join(
+            PROCESSED_DATA_PATH,
+            data_id,
+            RAW_DATA_TYPE,
+            f"tile_size_{TILE_SIZE}",
+            "pre_processing",
+            "raw_tiling",
+        )
+        assert os.path.exists(output_directory_processed_raw_tiling)
+
+        output_directory_processed_deconvolutions = os.path.join(
+            PROCESSED_DATA_PATH,
+            data_id,
+            RAW_DATA_TYPE,
+            f"tile_size_{TILE_SIZE}",
+            "pre_processing",
+            "deconvolutions",
+        )
+        os.makedirs(output_directory_processed_deconvolutions, exist_ok=True)
+
+        image_tile_paths = glob(
+            os.path.join(output_directory_processed_raw_tiling, "*.tif")
+        )
+        for image_tile_path in image_tile_paths:
+            img_arr = np.array(Image.open(image_tile_path))
+            image_deconvolved, stains = colour_deconvolution.deconvolve_image(img_arr)
+            cmap_psr = colour_deconvolution.create_cmap()
+            colour_deconvolution.save_deconvolved_images(
+                image_deconvolved=image_deconvolved,
+                image_path=image_tile_path,
+                output_directory=output_directory_processed_deconvolutions,
+                stains=stains,
+                cmap_psr=cmap_psr,
+            )
 
 
-run_tiling()
-
+# run_tiling()
+run_colour_deconvolution()
