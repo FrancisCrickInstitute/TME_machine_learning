@@ -73,7 +73,7 @@ def run_tiling():
         do_batch_processing = False
 
     if do_batch_processing:
-        data_paths = glob(f"*{RAW_DATA_TYPE}.czi")
+        data_paths = glob(os.path.join(RAW_DATA_PATH, "*.czi"))
     else:
         data_paths = [RAW_DATA_PATH]
 
@@ -149,5 +149,5 @@ def run_colour_deconvolution():
             )
 
 
-# run_tiling()
+run_tiling()
 run_colour_deconvolution()
