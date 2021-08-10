@@ -134,6 +134,7 @@ def save_deconvolved_images(
 
     for channel, stain in enumerate(stains):
         output_subdirectory = os.path.join(output_directory, stain)
+        os.makedirs(output_subdirectory, exist_ok=True)
         save_path = os.path.join(
             output_subdirectory,
             os.path.basename(image_path).split(".")[0] + f"_{stain}.tif",
