@@ -14,6 +14,7 @@
 import os
 import sys
 from glob import glob
+from natsort import natsorted
 from PIL import Image
 import numpy as np
 import argparse
@@ -25,6 +26,22 @@ if module_path not in sys.path:
 from prostate_recurrence.image_processing import tiling, colour_deconvolution
 
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline")
+parser.add_argument(
+    "--batch_size",
+    dest="batch_size",
+    action="store",
+    type=int,
+    default=10,
+    help="provide the size of batch for batch processing.",
+)
+parser.add_argument(
+    "--batch_id",
+    dest="batch_id",
+    action="store",
+    type=int,
+    default=0,
+    help="provide the current batch id for batch processing.",
+)
 parser.add_argument(
     "--raw_data_path",
     dest="raw_data_path",
@@ -62,18 +79,22 @@ RAW_DATA_PATH = args.raw_data_path
 RAW_DATA_TYPE = args.raw_data_type
 PROCESSED_DATA_PATH = args.processed_data_path
 TILE_SIZE = args.tile_size
-
+BATCH_SIZE = args.batch_size
+BATCH_ID = args.batch_id
 
 assert RAW_DATA_PATH and PROCESSED_DATA_PATH
 
 
 def run_tiling():
+    print("===== TILING =====")
     do_batch_processing = True
     if ".czi" in RAW_DATA_PATH:
         do_batch_processing = False
 
     if do_batch_processing:
-        data_paths = glob(os.path.join(RAW_DATA_PATH, "*.czi"))
+        data_paths = natsorted(glob(os.path.join(RAW_DATA_PATH, "*.czi")))
+        data_paths = data_paths[BATCH_SIZE*BATCH_ID: min(BATCH_SIZE*(BATCH_ID+1), len(data_paths))]
+        print(f"> batch processing ON < \n data paths are \n {data_paths}")
     else:
         data_paths = [RAW_DATA_PATH]
 
@@ -102,12 +123,15 @@ def run_tiling():
 
 
 def run_colour_deconvolution():
+    print("===== COLOUR DECONVOLUTION =====")
     do_batch_processing = True
     if ".czi" in RAW_DATA_PATH:
         do_batch_processing = False
 
     if do_batch_processing:
-        data_paths = glob(os.path.join(RAW_DATA_PATH, "*.czi"))
+        data_paths = natsorted(glob(os.path.join(RAW_DATA_PATH, "*.czi")))
+        data_paths = data_paths[BATCH_SIZE*BATCH_ID: min(BATCH_SIZE*(BATCH_ID+1), len(data_paths))]
+        print(f"> batch processing ON < \n data paths are \n {data_paths}")
     else:
         data_paths = [RAW_DATA_PATH]
 
