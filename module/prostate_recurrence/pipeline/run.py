@@ -11,19 +11,20 @@
 (7) [data_exploration/Python] perform stitching to construct whole slide feature heatmaps
 """
 
+import argparse
 import os
 import sys
 from glob import glob
+
+import numpy as np
 from natsort import natsorted
 from PIL import Image
-import numpy as np
-import argparse
 
 module_path = os.path.abspath(os.path.join("../../../module/"))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from prostate_recurrence.image_processing import tiling, colour_deconvolution
+from prostate_recurrence.image_processing import colour_deconvolution, tiling
 
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline")
 parser.add_argument(
@@ -93,7 +94,9 @@ def run_tiling():
 
     if do_batch_processing:
         data_paths = natsorted(glob(os.path.join(RAW_DATA_PATH, "*.czi")))
-        data_paths = data_paths[BATCH_SIZE*BATCH_ID: min(BATCH_SIZE*(BATCH_ID+1), len(data_paths))]
+        data_paths = data_paths[
+            BATCH_SIZE * BATCH_ID : min(BATCH_SIZE * (BATCH_ID + 1), len(data_paths))
+        ]
         print(f"> batch processing ON < \n data paths are \n {data_paths}")
     else:
         data_paths = [RAW_DATA_PATH]
@@ -130,7 +133,9 @@ def run_colour_deconvolution():
 
     if do_batch_processing:
         data_paths = natsorted(glob(os.path.join(RAW_DATA_PATH, "*.czi")))
-        data_paths = data_paths[BATCH_SIZE*BATCH_ID: min(BATCH_SIZE*(BATCH_ID+1), len(data_paths))]
+        data_paths = data_paths[
+            BATCH_SIZE * BATCH_ID : min(BATCH_SIZE * (BATCH_ID + 1), len(data_paths))
+        ]
         print(f"> batch processing ON < \n data paths are \n {data_paths}")
     else:
         data_paths = [RAW_DATA_PATH]
