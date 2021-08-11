@@ -255,7 +255,7 @@ def run_validate_psr_image():
             "fraction_with_min_intensity",
         ]
         summary_rows = []
-        for image_path in tqdm(psr_image_tile_paths[:1]):
+        for image_path in tqdm(psr_image_tile_paths):
             image_arr = validate_psr_image.read_psr_image(image_path)
             (
                 valid,
