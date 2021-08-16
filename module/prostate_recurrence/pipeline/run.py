@@ -32,6 +32,8 @@ from prostate_recurrence.image_processing import (
     validate_psr_image,
 )
 
+# from prostate_recurrence.data_exploration import stitching
+
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline")
 parser.add_argument(
     "--flag_run_tiling",
@@ -57,6 +59,14 @@ parser.add_argument(
     default=1,
     help="indicate whether validate psr image module needs running. set it to 0 if not.",
 )
+# parser.add_argument(
+#     "--flag_run_stitching",
+#     dest="flag_run_stitching",
+#     action="store",
+#     type=int,
+#     default=1,
+#     help="indicate whether stitching module needs running. set it to 0 if not.",
+# )
 parser.add_argument(
     "--batch_size",
     dest="batch_size",
@@ -89,6 +99,14 @@ parser.add_argument(
     default="",
     help="provide the path saving processed data.",
 )
+# parser.add_argument(
+#     "--features_path",
+#     dest="features_path",
+#     action="store",
+#     type=str,
+#     default="",
+#     help="provide the path saving features.",
+# )
 parser.add_argument(
     "--raw_data_type",
     dest="raw_data_type",
@@ -109,12 +127,14 @@ args = parser.parse_args()
 RAW_DATA_PATH = args.raw_data_path
 RAW_DATA_TYPE = args.raw_data_type
 PROCESSED_DATA_PATH = args.processed_data_path
+# FEATURES_PATH = args.features_path
 TILE_SIZE = args.tile_size
 BATCH_SIZE = args.batch_size
 BATCH_ID = args.batch_id
 FLAG_RUN_TILING = args.flag_run_tiling
 FLAG_RUN_COLOUR_DECONVOLUTION = args.flag_run_colour_deconvolution
 FLAG_RUN_VALIDATE_PSR_IMAGE = args.flag_run_validate_psr_image
+# FLAG_RUN_STITCHING = args.flag_run_stitching
 
 assert RAW_DATA_PATH and PROCESSED_DATA_PATH
 
@@ -276,9 +296,43 @@ def run_validate_psr_image():
         )
 
 
+# def run_feature_engineering():
+#     pass
+
+
+# def run_stitching():
+#     print("===== TILING =====")
+#     do_batch_processing = True
+#     if ".czi" in RAW_DATA_PATH:
+#         do_batch_processing = False
+
+#     if do_batch_processing:
+#         data_paths = natsorted(glob(os.path.join(RAW_DATA_PATH, "*.czi")))
+#         data_paths = data_paths[
+#             BATCH_SIZE * BATCH_ID : min(BATCH_SIZE * (BATCH_ID + 1), len(data_paths))
+#         ]
+#         print(f"> batch processing ON < \n data paths are \n {data_paths}")
+#     else:
+#         data_paths = [RAW_DATA_PATH]
+
+#     for data_path in data_paths:
+#         data_id = "_".join(data_path.split("/")[-1].split("_")[:2])
+#         output_directory_stitching = os.path.join(
+#             FEATURES_PATH,
+#             # data_id,
+#             # RAW_DATA_TYPE,
+#             # f"tile_size_{TILE_SIZE}",
+#             # "pre_processing",
+#             # "raw_tiling",
+#         )
+#         os.makedirs(output_directory_stitching, exist_ok=True)
+
+
 if FLAG_RUN_TILING:
     run_tiling()
 if FLAG_RUN_COLOUR_DECONVOLUTION:
     run_colour_deconvolution()
 if FLAG_RUN_VALIDATE_PSR_IMAGE:
     run_validate_psr_image()
+# if FLAG_RUN_STITCHING:
+#     run_stitching()
