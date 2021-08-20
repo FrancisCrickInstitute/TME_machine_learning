@@ -32,7 +32,7 @@ from prostate_recurrence.image_processing import (
     validate_psr_image,
 )
 
-# from prostate_recurrence.data_exploration import stitching
+from prostate_recurrence.data_exploration import stitching
 
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline")
 parser.add_argument(
@@ -59,14 +59,14 @@ parser.add_argument(
     default=1,
     help="indicate whether validate psr image module needs running. set it to 0 if not.",
 )
-# parser.add_argument(
-#     "--flag_run_stitching",
-#     dest="flag_run_stitching",
-#     action="store",
-#     type=int,
-#     default=1,
-#     help="indicate whether stitching module needs running. set it to 0 if not.",
-# )
+parser.add_argument(
+    "--flag_run_stitching",
+    dest="flag_run_stitching",
+    action="store",
+    type=int,
+    default=1,
+    help="indicate whether stitching module needs running. set it to 0 if not.",
+)
 parser.add_argument(
     "--batch_size",
     dest="batch_size",
@@ -99,14 +99,14 @@ parser.add_argument(
     default="",
     help="provide the path saving processed data.",
 )
-# parser.add_argument(
-#     "--features_path",
-#     dest="features_path",
-#     action="store",
-#     type=str,
-#     default="",
-#     help="provide the path saving features.",
-# )
+parser.add_argument(
+    "--features_path",
+    dest="features_path",
+    action="store",
+    type=str,
+    default="",
+    help="provide the path saving features.",
+)
 parser.add_argument(
     "--raw_data_type",
     dest="raw_data_type",
@@ -127,14 +127,14 @@ args = parser.parse_args()
 RAW_DATA_PATH = args.raw_data_path
 RAW_DATA_TYPE = args.raw_data_type
 PROCESSED_DATA_PATH = args.processed_data_path
-# FEATURES_PATH = args.features_path
+FEATURES_PATH = args.features_path
 TILE_SIZE = args.tile_size
 BATCH_SIZE = args.batch_size
 BATCH_ID = args.batch_id
 FLAG_RUN_TILING = args.flag_run_tiling
 FLAG_RUN_COLOUR_DECONVOLUTION = args.flag_run_colour_deconvolution
 FLAG_RUN_VALIDATE_PSR_IMAGE = args.flag_run_validate_psr_image
-# FLAG_RUN_STITCHING = args.flag_run_stitching
+FLAG_RUN_STITCHING = args.flag_run_stitching
 
 assert RAW_DATA_PATH and PROCESSED_DATA_PATH
 
@@ -300,32 +300,181 @@ def run_validate_psr_image():
 #     pass
 
 
-# def run_stitching():
-#     print("===== TILING =====")
-#     do_batch_processing = True
-#     if ".czi" in RAW_DATA_PATH:
-#         do_batch_processing = False
+def run_stitching():
+    print("===== STITCHING =====")
+    do_batch_processing = True
+    if ".czi" in RAW_DATA_PATH:
+        do_batch_processing = False
 
-#     if do_batch_processing:
-#         data_paths = natsorted(glob(os.path.join(RAW_DATA_PATH, "*.czi")))
-#         data_paths = data_paths[
-#             BATCH_SIZE * BATCH_ID : min(BATCH_SIZE * (BATCH_ID + 1), len(data_paths))
-#         ]
-#         print(f"> batch processing ON < \n data paths are \n {data_paths}")
-#     else:
-#         data_paths = [RAW_DATA_PATH]
+    if do_batch_processing:
+        data_paths = natsorted(glob(os.path.join(RAW_DATA_PATH, "*.czi")))
+        data_paths = data_paths[
+            BATCH_SIZE * BATCH_ID : min(BATCH_SIZE * (BATCH_ID + 1), len(data_paths))
+        ]
+        print(f"> batch processing ON < \n data paths are \n {data_paths}")
+    else:
+        data_paths = [RAW_DATA_PATH]
 
-#     for data_path in data_paths:
-#         data_id = "_".join(data_path.split("/")[-1].split("_")[:2])
-#         output_directory_stitching = os.path.join(
-#             FEATURES_PATH,
-#             # data_id,
-#             # RAW_DATA_TYPE,
-#             # f"tile_size_{TILE_SIZE}",
-#             # "pre_processing",
-#             # "raw_tiling",
-#         )
-#         os.makedirs(output_directory_stitching, exist_ok=True)
+    for data_path in data_paths:
+        data_id = "_".join(data_path.split("/")[-1].split("_")[:2])
+
+        output_directory_processed_raw_tiling = os.path.join(
+            PROCESSED_DATA_PATH,
+            data_id,
+            f"tile_size_{TILE_SIZE}",
+            "whole_slide",
+            RAW_DATA_TYPE,
+            "raw_tiling",
+        )
+        output_directory_processed_tile_level_features = os.path.join(
+            FEATURES_PATH,
+            data_id,
+            f"tile_size_{TILE_SIZE}",
+            "whole_slide",
+            RAW_DATA_TYPE,
+            "deconvolutions/psr/inverted_grayscale",
+            "tile_level_features",
+        )
+        assert os.path.exists(output_directory_processed_raw_tiling) and os.path.exists(
+            output_directory_processed_tile_level_features
+        )
+
+        output_directory_processed_stitching = os.path.join(
+            FEATURES_PATH,
+            data_id,
+            f"tile_size_{TILE_SIZE}",
+            "whole_slide",
+            RAW_DATA_TYPE,
+            "deconvolutions/psr/inverted_grayscale",
+            "slide_level_features/stitching",
+        )
+        os.makedirs(output_directory_processed_stitching, exist_ok=True)
+        os.chmod(output_directory_processed_stitching, mode=0o777)
+
+        # feature image
+        which_image_tiles = os.listdir(output_directory_processed_tile_level_features)
+        which_tif_files = glob(
+            os.path.join(
+                output_directory_processed_tile_level_features,
+                which_image_tiles[0],
+                "*tif",
+            )
+        )
+        row_col_pairs = np.array(
+            [
+                [
+                    int(image_tile_folder.split("_")[2]),
+                    int(image_tile_folder.split("_")[3]),
+                ]
+                for image_tile_folder in which_image_tiles
+            ]
+        )
+        nrow = ncol = row_col_pairs.max() + 1
+
+        file_patterns = [which_tif.split("/")[-1] for which_tif in which_tif_files]
+        file_patterns_skip = [
+            file_pattern for file_pattern in file_patterns if "_cm" in file_pattern
+        ]
+        for file_pattern in file_patterns:
+            if file_pattern in file_patterns_skip:
+                print(f"skipping file : {file_pattern}")
+                continue
+
+            print(f"> processing feature = {file_pattern}")
+            file_paths = glob(
+                os.path.join(
+                    output_directory_processed_tile_level_features,
+                    f"image_tile_*_psr/{file_pattern}",
+                )
+            )
+
+            save_path = os.path.join(
+                output_directory_processed_stitching,
+                f"stitched_image_{file_pattern}.jpg",
+            )
+
+            print(f"... saving output to {save_path}")
+            stitching.reconstruct_whole_slide(
+                file_paths=file_paths,
+                position_in_path_has_tile_row_col=-2,
+                save_path=save_path,
+                nrow=nrow,
+                ncol=ncol,
+                dim=(1024, 1024, 3),
+            )
+
+        # feature heatmap
+        file_pattern_overlay = "features_out.csv"
+
+        file_paths_features = glob(
+            os.path.join(
+                output_directory_processed_tile_level_features,
+                f"image_tile_*_psr/{file_pattern_overlay}",
+            )
+        )
+        row_col_strings = [
+            "_".join(
+                [
+                    file_path_feature.split("/")[-2].split("_")[2],
+                    file_path_feature.split("/")[-2].split("_")[3],
+                ]
+            )
+            for file_path_feature in file_paths_features
+        ]
+        file_paths_all = glob(
+            os.path.join(output_directory_processed_raw_tiling, "image_tile*.tif")
+        )
+
+        file_paths = [
+            file_path
+            for file_path in file_paths_all
+            if "_".join(
+                [
+                    file_path.split("/")[-1].split("_")[2],
+                    file_path.split("/")[-1].split("_")[3].split(".")[0],
+                ]
+            )
+            in row_col_strings
+        ]
+
+        save_path = os.path.join(
+            output_directory_processed_stitching, f"stitched_image_raw_PSR.jpg"
+        )
+        raw_image = stitching.reconstruct_whole_slide(
+            file_paths=file_paths,
+            position_in_path_has_tile_row_col=-1,
+            save_path=save_path,
+            nrow=nrow,
+            ncol=ncol,
+            dim=(1024, 1024, 3),
+        )
+
+        features_all = pd.DataFrame()
+        for file_path_feature in file_paths_features:
+            subdir = file_path_feature.split("/")[-2]
+            features = pd.read_csv(
+                file_path_feature, header=None, names=["feature", "value"]
+            )
+            features["tile"] = subdir
+            features_all = features_all.append(features)
+
+        for feature_to_map in features_all.feature.unique():
+            print(f"> mapping feature : {feature_to_map}")
+            save_path = os.path.join(
+                output_directory_processed_stitching,
+                f"stitched_heatmap_{feature_to_map}.jpg",
+            )
+            mask = stitching.visualise_overlay(
+                raw_image=raw_image,
+                file_paths=file_paths_features,
+                position_in_path_has_tile_row_col=-2,
+                features_all=features_all,
+                feature_to_map=feature_to_map,
+                save_path=save_path,
+                nrow=nrow,
+                ncol=ncol,
+                size=1024,
+            )
 
 
 if FLAG_RUN_TILING:
@@ -334,5 +483,5 @@ if FLAG_RUN_COLOUR_DECONVOLUTION:
     run_colour_deconvolution()
 if FLAG_RUN_VALIDATE_PSR_IMAGE:
     run_validate_psr_image()
-# if FLAG_RUN_STITCHING:
-#     run_stitching()
+if FLAG_RUN_STITCHING:
+    run_stitching()
