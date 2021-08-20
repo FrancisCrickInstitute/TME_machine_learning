@@ -61,7 +61,12 @@ def get_row_col(image_name: str) -> Tuple[int, int]:
 
 
 def reconstruct_whole_slide(
-    file_paths: List[str], save_path: str, nrow: int, ncol: int, dim: Tuple
+    file_paths: List[str],
+    position_in_path_has_tile_row_col: int,
+    save_path: str,
+    nrow: int,
+    ncol: int,
+    dim: Tuple,
 ) -> Image:
     """stitch image tiles to reconstruct the whole slide image
     This function locates individual image tiles according to the row and
@@ -72,6 +77,8 @@ def reconstruct_whole_slide(
     ----------
     file_paths : List[str]
         a list of paths to image tiles
+    position_in_path_has_tile_row_col : int
+        position in path has tile row and column locations
     save_path : str
         the path to save stitched whole slide image
     nrow : int
@@ -100,8 +107,8 @@ def reconstruct_whole_slide(
     wsi_image.fill(255)
 
     for file_path in tqdm(file_paths):
-        image_name = file_path.split("/")[-1]
-        row, col = get_row_col(image_name)
+        image_tile_name = file_path.split("/")[position_in_path_has_tile_row_col]
+        row, col = get_row_col(image_tile_name)
         image = Image.open(file_path)
         image_arr = np.array(image)
 
@@ -130,6 +137,7 @@ def reconstruct_whole_slide(
 def visualise_overlay(
     raw_image: Image,
     file_paths: List[str],
+    position_in_path_has_tile_row_col: int,
     features_all: pd.DataFrame,
     feature_to_map: str,
     save_path: str,
@@ -148,6 +156,8 @@ def visualise_overlay(
         whole slide image of PSR staining.
     file_paths : List[str]
         a list of paths to .csv files recording tile-level features
+    position_in_path_has_tile_row_col : int
+        position in path has tile row and column locations
     features_all : pd.DataFrame
         a data frame recording tile-level features
     feature_to_map : str
@@ -178,7 +188,7 @@ def visualise_overlay(
     ].value.max()
 
     for file_path in tqdm(file_paths):
-        image_name = file_path.split("/")[-1]
+        image_name = file_path.split("/")[position_in_path_has_tile_row_col]
         row, col = get_row_col(image_name)
 
         feature_value = features_all.loc[
