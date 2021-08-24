@@ -251,9 +251,9 @@ def run_validate_psr_image():
         output_directory_processed_deconvolutions_psr = os.path.join(
             PROCESSED_DATA_PATH,
             data_id,
-            RAW_DATA_TYPE,
             f"tile_size_{TILE_SIZE}",
-            "pre_processing",
+            "whole_slide",
+            RAW_DATA_TYPE,
             "deconvolutions",
             "psr",
         )
@@ -263,6 +263,7 @@ def run_validate_psr_image():
             output_directory_processed_deconvolutions_psr, "valid_psr_images_summary/"
         )
         os.makedirs(output_directory_summary, exist_ok=True)
+        os.chmod(output_directory_summary, mode=0o777)
 
         psr_image_tile_paths = glob(
             os.path.join(output_directory_processed_deconvolutions_psr, "*psr.tif")
@@ -438,7 +439,7 @@ def run_stitching():
         ]
 
         save_path = os.path.join(
-            output_directory_processed_stitching, f"stitched_image_raw_PSR.jpg"
+            output_directory_processed_stitching, "stitched_image_raw_PSR.jpg"
         )
         raw_image = stitching.reconstruct_whole_slide(
             file_paths=file_paths,
