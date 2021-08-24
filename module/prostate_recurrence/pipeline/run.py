@@ -256,6 +256,7 @@ def run_validate_psr_image():
             RAW_DATA_TYPE,
             "deconvolutions",
             "psr",
+            "inverted_grayscale",
         )
         assert os.path.exists(output_directory_processed_deconvolutions_psr)
 

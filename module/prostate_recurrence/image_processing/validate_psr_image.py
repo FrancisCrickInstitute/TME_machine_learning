@@ -120,7 +120,7 @@ def write_validation_summary(
     if write_valid_job_batch_file:
         all_image_tiles = natsorted(summary.path_to_image_tile.values)
         valid_image_tiles = natsorted(
-            summary.loc[summary.valid == 1].path_to_image_tiles.values
+            summary.loc[summary.valid == 1].path_to_image_tile.values
         )
 
         valid_image_tile_indices = [
