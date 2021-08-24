@@ -27,6 +27,7 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
+from natsort import natsorted
 from PIL import Image
 
 
@@ -93,7 +94,11 @@ def validate_psr_image(
         return (0, fraction_with_min_intensity)
 
 
-def write_validation_summary(summary: pd.DataFrame, output_directory: str) -> None:
+def write_validation_summary(
+    summary: pd.DataFrame,
+    output_directory: str,
+    write_valid_job_batch_file: bool = True,
+) -> None:
     """write the validation summary as a .csv file
 
     Parameters
@@ -104,7 +109,29 @@ def write_validation_summary(summary: pd.DataFrame, output_directory: str) -> No
         'fraction_with_min_intensity']
     output_directory : str
         Directory to save the summary file into.
+    write_valid_job_batch_file : bool, optional
+        A boolean variable indicating whether to write valid job batch file, by default
+        True
     """
 
     filename_summary = "summary_valid_image_tiles.csv"
     summary.to_csv(os.path.join(output_directory, filename_summary), index=False)
+
+    if write_valid_job_batch_file:
+        all_image_tiles = natsorted(summary.path_to_image_tile.values)
+        valid_image_tiles = natsorted(
+            summary.loc[summary.valid == 1].path_to_image_tiles.values
+        )
+
+        valid_image_tile_indices = [
+            all_image_tiles.index(valid_image_tile)
+            for valid_image_tile in valid_image_tiles
+        ]
+
+        valid_jobs = pd.DataFrame(
+            {"path_to_image_tile": valid_image_tiles, "index": valid_image_tile_indices}
+        )
+        filename_valid_jobs = "job_batch_valid_image_tiles.csv"
+        valid_jobs.to_csv(
+            os.path.join(output_directory, filename_valid_jobs), index=False
+        )
