@@ -145,9 +145,27 @@ def save_deconvolved_images(
         stained_image.save(save_path)
 
         if stain == "psr":
+            output_subdirectory_inverted_grayscale = os.path.join(
+                output_subdirectory, "inverted_grayscale"
+            )
+            save_path_inverted_grayscale = os.path.join(
+                output_subdirectory_inverted_grayscale,
+                os.path.basename(image_path).split(".")[0] + f"_{stain}.tif",
+            )
+            os.makedirs(output_subdirectory_inverted_grayscale, exist_ok=True)
+            os.chmod(output_subdirectory_inverted_grayscale, mode=0o777)
+            os.rename(save_path, save_path_inverted_grayscale)
+
             fig = plt.figure(figsize=(1.707, 1.707), dpi=300)
             ax = fig.add_axes([0, 0, 1, 1])
             ax.imshow(stained_image, cmap=cmap_psr)
             plt.axis("off")
-            plt.savefig(save_path + "_coloured.tif", dpi=300)
+            plt.savefig(
+                os.path.join(
+                    output_subdirectory,
+                    os.path.basename(save_path_inverted_grayscale).split(".")[0]
+                    + "_coloured.tif",
+                ),
+                dpi=300,
+            )
             plt.close()
