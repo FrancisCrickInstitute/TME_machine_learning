@@ -159,9 +159,9 @@ def run_tiling():
         output_directory_processed_raw_tiling = os.path.join(
             PROCESSED_DATA_PATH,
             data_id,
-            RAW_DATA_TYPE,
             f"tile_size_{TILE_SIZE}",
-            "pre_processing",
+            "whole_slide",
+            RAW_DATA_TYPE,
             "raw_tiling",
         )
         os.makedirs(output_directory_processed_raw_tiling, exist_ok=True)
@@ -198,9 +198,9 @@ def run_colour_deconvolution():
         output_directory_processed_raw_tiling = os.path.join(
             PROCESSED_DATA_PATH,
             data_id,
-            RAW_DATA_TYPE,
             f"tile_size_{TILE_SIZE}",
-            "pre_processing",
+            "whole_slide",
+            RAW_DATA_TYPE,
             "raw_tiling",
         )
         assert os.path.exists(output_directory_processed_raw_tiling)
@@ -208,9 +208,9 @@ def run_colour_deconvolution():
         output_directory_processed_deconvolutions = os.path.join(
             PROCESSED_DATA_PATH,
             data_id,
-            RAW_DATA_TYPE,
             f"tile_size_{TILE_SIZE}",
-            "pre_processing",
+            "whole_slide",
+            RAW_DATA_TYPE,
             "deconvolutions",
         )
         os.makedirs(output_directory_processed_deconvolutions, exist_ok=True)
