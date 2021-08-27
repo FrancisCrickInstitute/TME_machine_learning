@@ -190,7 +190,10 @@ def check_feature_engineering():
                     summary_file_valid_image_tiles
                 )
                 for _, row in job_batch_valid_image_tiles.iterrows():
-                    image_tile, image_tile_index = row.path_to_image, row.index
+                    image_tile, image_tile_index = (
+                        row["path_to_image_tile"],
+                        row["index"],
+                    )
                     image_tile_name = os.path.basename(image_tile).split(".")[0]
                     # check if there are outputs for this image tile
                     flag_feature_engineering_performed: str = "no"
@@ -206,20 +209,20 @@ def check_feature_engineering():
                             os.path.join(
                                 output_directory_feature_engineering_tiles,
                                 image_tile_name,
-                                "features_out.csv",
+                                "features_out.mat",
                             )
                         ):
                             flag_feature_engineering_completed = "yes"
 
-                            check_summary_rows.append(
-                                (
-                                    slide_name,
-                                    image_tile,
-                                    image_tile_index,
-                                    flag_feature_engineering_performed,
-                                    flag_feature_engineering_completed,
-                                )
-                            )
+                    check_summary_rows.append(
+                        (
+                            slide_name,
+                            image_tile,
+                            image_tile_index,
+                            flag_feature_engineering_performed,
+                            flag_feature_engineering_completed,
+                        )
+                    )
 
     check_summary = pd.DataFrame(data=check_summary_rows, columns=check_summary_columns)
 
