@@ -16,11 +16,12 @@
 
 from typing import Dict, List, Tuple
 
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pandas.core.frame import DataFrame
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 
 def read_data(paths_to_data: List[str]) -> pd.DataFrame:
@@ -104,9 +105,11 @@ def process_data(
     feature_values = data.values
     if type_of_processing == "standardisation":
         scaler = StandardScaler()
-        scaler.fit_transform(feature_values)
+        transfored_feature_values = scaler.fit_transform(feature_values)
 
-        standardised_data = pd.DataFrame(columns=feature_names, data=feature_values)
+        standardised_data = pd.DataFrame(
+            columns=feature_names, data=transfored_feature_values
+        )
 
         standardisation_attributes = pd.DataFrame(
             {
@@ -122,8 +125,104 @@ def process_data(
     return (None, None)
 
 
-def perform_pca():
-    pass
+def perform_pca(
+    data: pd.DataFrame,
+    slide_names: np.ndarray,
+    output_directory: str,
+    n_components: int = None,
+    save_plot: bool = True,
+    save_array: bool = True,
+) -> Tuple[np.ndarray, np.ndarray]:
+    pca = PCA(n_components=n_components)
+    results_pca = pca.fit_transform(data)
+
+    pca_components = pca.components_
+    pca_explained_variance_ratio = pca.explained_variance_ratio_
+    pca_explained_variance = pca.explained_variance_
+    loadings = pca.components_[:2, :].T * np.sqrt(pca.explained_variance_[:2])
+
+    if save_array:
+        path_save_pca_components = os.path.join(
+            os.path.join(output_directory, "pca_components.npy")
+        )
+        with open(path_save_pca_components, "wb") as f:
+            np.save(f, pca_components)
+
+        path_save_pca_explained_variance_ratio = os.path.join(
+            os.path.join(output_directory, "pca_explained_variance_ratio.npy")
+        )
+        with open(path_save_pca_explained_variance_ratio, "wb") as f:
+            np.save(f, pca_explained_variance_ratio)
+
+        path_save_pca_explained_variance = os.path.join(
+            os.path.join(output_directory, "pca_explained_variance.npy")
+        )
+        with open(path_save_pca_explained_variance, "wb") as f:
+            np.save(f, pca_explained_variance)
+
+    if save_plot:
+        path_save_plot_pca_explained_variance_ratio = os.path.join(
+            os.path.join(output_directory, "pca_explained_variance_ratio.pdf")
+        )
+        fig = plt.figure(figsize=(4, 3), dpi=300)
+        ax1 = fig.add_axes([0.2, 0.2, 0.7, 0.7])
+        ax1.set_ylim(0, 1)
+        ax2 = ax1.twinx()
+        ax2.set_ylim(0, 1)
+        ax1.set_xticks(np.arange(1, pca_explained_variance_ratio.size + 1, 5))
+        ax1.set_xlabel("Principal components")
+        ax1.set_ylabel("Fraction of variance explained", c="b")
+        ax2.set_ylabel("Cumulative fraction of variance explained", c="r")
+        ax1.bar(
+            np.arange(1, pca_explained_variance_ratio.size + 1),
+            height=pca_explained_variance_ratio,
+            color="b",
+        )
+        ax2.plot(
+            np.arange(1, pca_explained_variance_ratio.size + 1),
+            np.cumsum(pca_explained_variance_ratio),
+            c="r",
+            marker="o",
+            markerfacecolor="none",
+        )
+        plt.savefig(path_save_plot_pca_explained_variance_ratio, dpi=300)
+        plt.close()
+
+        path_save_plot_pca_components = os.path.join(
+            os.path.join(output_directory, "pca_components.pdf")
+        )
+        unique_slide_names = np.unique(slide_names).tolist()
+        colorvals = np.linspace(0, 1, len(unique_slide_names))
+
+        cs = [
+            colorvals[unique_slide_names.index(slide_name)]
+            for slide_name in slide_names
+        ]
+
+        fig = plt.figure(figsize=(4, 3), dpi=300)
+        ax1 = fig.add_axes([0.2, 0.2, 0.7, 0.7])
+        scatter = ax1.scatter(results_pca[:, 0], results_pca[:, 1], c=cs, s=3)
+        ax1.legend(
+            handles=scatter.legend_elements()[0],
+            labels=unique_slide_names,
+            prop={"size": 6},
+        )
+        ax1.set_xlabel(
+            f"PC1 ({round(pca_explained_variance_ratio[0]*100, 2)}% variance explained)"
+        )
+        ax1.set_ylabel(
+            f"PC2 ({round(pca_explained_variance_ratio[1]*100, 2)}% variance explained)"
+        )
+        plt.savefig(path_save_plot_pca_components, dpi=300)
+
+        path_save_plot_pca_components_with_loading = os.path.join(
+            os.path.join(output_directory, "pca_components_with_loading.pdf")
+        )
+        for pc1, pc2 in loadings:
+            ax1.plot([0, pc1], [0, pc2])
+        plt.savefig(path_save_plot_pca_components_with_loading, dpi=300)
+
+        plt.close()
 
 
 def perform_tsne():
