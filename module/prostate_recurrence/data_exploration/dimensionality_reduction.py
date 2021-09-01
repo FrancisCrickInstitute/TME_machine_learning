@@ -127,19 +127,62 @@ def process_data(
 
 def perform_pca(
     data: pd.DataFrame,
-    slide_names: np.ndarray,
     output_directory: str,
     n_components: int = None,
     save_plot: bool = True,
     save_array: bool = True,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Dict[str, np.ndarray]:
+    """perform PCA
+    This function expects a data frame, which records quantitative features
+    and labels reflecting slide and image tile identifiers, and an output
+    directory as input parameters. Optional parameters include the number
+    of principal components to use for PCA and flags indicating whether to
+    save PCA outputs, including plots and numpy arrays. This function returns
+    a dictionary of attributes of the fit PCA model.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        a data frame of quantiative features and labels.
+    output_directory : str
+        an output directory to save PCA outputs into.
+    n_components : int, optional
+        the number of principal components to keep in PCA, by default None
+    save_plot : bool, optional
+        a boolean variable indicating whether to save plots, by default True
+    save_array : bool, optional
+        a boolean variable indicating whether to save arrays, by default True
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        a dictionary of attributes of PCA, including the following:
+        "results_pca": n_samples x n_components array
+        "components_": n_components x n_features array
+        "explained_variance_ratio_": n_components x 1 array
+        "explained_variance_": n_components x 1 array
+        "loadings": n_features x 2 array
+    """
+
+    features = data[
+        [col for col in data.columns if col not in ["slide", "image_tile", "label"]]
+    ]
+
     pca = PCA(n_components=n_components)
-    results_pca = pca.fit_transform(data)
+    results_pca = pca.fit_transform(features)
 
     pca_components = pca.components_
     pca_explained_variance_ratio = pca.explained_variance_ratio_
     pca_explained_variance = pca.explained_variance_
     loadings = pca.components_[:2, :].T * np.sqrt(pca.explained_variance_[:2])
+
+    pca_attributes = {
+        "results_pca": results_pca,
+        "components_": pca_components,
+        "explained_variance_ratio_": pca_explained_variance_ratio,
+        "explained_variance_": pca_explained_variance,
+        "loadings": loadings,
+    }
 
     if save_array:
         path_save_pca_components = os.path.join(
@@ -170,9 +213,13 @@ def perform_pca(
         ax2 = ax1.twinx()
         ax2.set_ylim(0, 1)
         ax1.set_xticks(np.arange(1, pca_explained_variance_ratio.size + 1, 5))
-        ax1.set_xlabel("Principal components")
-        ax1.set_ylabel("Fraction of variance explained", c="b")
-        ax2.set_ylabel("Cumulative fraction of variance explained", c="r")
+        ax1.set_xlabel("Principal components", size=8)
+        ax1.set_ylabel("Fraction of variance explained", c="b", size=8)
+        ax2.set_ylabel("Cumulative fraction of variance explained", c="r", size=8)
+
+        for ax in [ax1, ax2]:
+            ax.tick_params(axis="both", which="major", labelsize=6)
+            ax.tick_params(axis="both", which="minor", labelsize=6)
         ax1.bar(
             np.arange(1, pca_explained_variance_ratio.size + 1),
             height=pca_explained_variance_ratio,
@@ -184,6 +231,7 @@ def perform_pca(
             c="r",
             marker="o",
             markerfacecolor="none",
+            ms=4,
         )
         plt.savefig(path_save_plot_pca_explained_variance_ratio, dpi=300)
         plt.close()
@@ -191,12 +239,11 @@ def perform_pca(
         path_save_plot_pca_components = os.path.join(
             os.path.join(output_directory, "pca_components.pdf")
         )
-        unique_slide_names = np.unique(slide_names).tolist()
+        unique_slide_names = np.unique(data.slide).tolist()
         colorvals = np.linspace(0, 1, len(unique_slide_names))
 
         cs = [
-            colorvals[unique_slide_names.index(slide_name)]
-            for slide_name in slide_names
+            colorvals[unique_slide_names.index(slide_name)] for slide_name in data.slide
         ]
 
         fig = plt.figure(figsize=(4, 3), dpi=300)
@@ -208,11 +255,16 @@ def perform_pca(
             prop={"size": 6},
         )
         ax1.set_xlabel(
-            f"PC1 ({round(pca_explained_variance_ratio[0]*100, 2)}% variance explained)"
+            f"PC1 ({round(pca_explained_variance_ratio[0]*100, 2)}% variance explained)",
+            size=8,
         )
         ax1.set_ylabel(
-            f"PC2 ({round(pca_explained_variance_ratio[1]*100, 2)}% variance explained)"
+            f"PC2 ({round(pca_explained_variance_ratio[1]*100, 2)}% variance explained)",
+            size=8,
         )
+        for ax in [ax1]:
+            ax.tick_params(axis="both", which="major", labelsize=6)
+            ax.tick_params(axis="both", which="minor", labelsize=6)
         plt.savefig(path_save_plot_pca_components, dpi=300)
 
         path_save_plot_pca_components_with_loading = os.path.join(
@@ -223,6 +275,8 @@ def perform_pca(
         plt.savefig(path_save_plot_pca_components_with_loading, dpi=300)
 
         plt.close()
+
+    return pca_attributes
 
 
 def perform_tsne():
