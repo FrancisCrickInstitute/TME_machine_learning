@@ -235,7 +235,14 @@ def check_feature_engineering():
                         )
                     )
 
-            completion_fraction = n_image_tiles_processed / n_image_tiles_for_processing
+            if n_image_tiles_for_processing == 0:
+                n_image_tiles_for_processing = -1
+                n_image_tiles_processed = -1
+                completion_fraction = -1
+            else:
+                completion_fraction = (
+                    n_image_tiles_processed / n_image_tiles_for_processing
+                )
             check_completion_rows.append(
                 (
                     slide_name,
