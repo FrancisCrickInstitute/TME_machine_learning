@@ -145,6 +145,14 @@ def check_feature_engineering():
     ]
     check_summary_rows = []
 
+    check_completion_columns = [
+        "slide",
+        "n_image_tiles_for_processing",
+        "n_image_tiles_processed",
+        "completion_fraction",
+    ]
+    check_completion_rows = []
+
     for slide_name in job_batch_file.slide.values:
         # get a list of valid image tiles
         summary_file_valid_image_tiles = os.path.join(
@@ -174,7 +182,12 @@ def check_feature_engineering():
             check_summary_rows.append(
                 (slide_name, "none_validated_for_psr", "n/a", "n/a", "n/a")
             )
+            check_completion_rows.append((slide_name, -1, -1, -1))
         else:
+            job_batch_valid_image_tiles = pd.read_csv(summary_file_valid_image_tiles)
+            n_image_tiles_for_processing = job_batch_valid_image_tiles.shape[0]
+            n_image_tiles_processed = 0
+
             if not os.path.exists(output_directory_feature_engineering_tiles):
                 check_summary_rows.append(
                     (
@@ -186,9 +199,6 @@ def check_feature_engineering():
                     )
                 )
             else:
-                job_batch_valid_image_tiles = pd.read_csv(
-                    summary_file_valid_image_tiles
-                )
                 for _, row in job_batch_valid_image_tiles.iterrows():
                     image_tile, image_tile_index = (
                         row["path_to_image_tile"],
@@ -213,6 +223,7 @@ def check_feature_engineering():
                             )
                         ):
                             flag_feature_engineering_completed = "yes"
+                            n_image_tiles_processed += 1
 
                     check_summary_rows.append(
                         (
@@ -224,14 +235,30 @@ def check_feature_engineering():
                         )
                     )
 
+            completion_fraction = n_image_tiles_processed / n_image_tiles_for_processing
+            check_completion_rows.append(
+                (
+                    slide_name,
+                    n_image_tiles_for_processing,
+                    n_image_tiles_processed,
+                    completion_fraction,
+                )
+            )
     check_summary = pd.DataFrame(data=check_summary_rows, columns=check_summary_columns)
-
     path_to_write_check_summary = os.path.join(
         os.path.dirname(JOB_BATCH_FILE_PATH),
         f"{os.path.basename(JOB_BATCH_FILE_PATH).split('.')[0]}_check_summary_feature_engineering.csv",
     )
-
     check_summary.to_csv(path_to_write_check_summary, index=False)
+
+    check_completion = pd.DataFrame(
+        data=check_completion_rows, columns=check_completion_columns
+    )
+    path_to_write_check_completion = os.path.join(
+        os.path.dirname(JOB_BATCH_FILE_PATH),
+        f"{os.path.basename(JOB_BATCH_FILE_PATH).split('.')[0]}_check_completion_feature_engineering.csv",
+    )
+    check_completion.to_csv(path_to_write_check_completion, index=False)
 
 
 def check_stitching():
