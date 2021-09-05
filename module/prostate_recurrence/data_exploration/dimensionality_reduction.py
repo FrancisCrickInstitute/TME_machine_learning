@@ -22,6 +22,8 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+from umap import UMAP
 
 
 def read_data(paths_to_data: List[str]) -> pd.DataFrame:
@@ -185,6 +187,12 @@ def perform_pca(
     }
 
     if save_array:
+        path_save_pca_results = os.path.join(
+            os.path.join(output_directory, "results_pca.npy")
+        )
+        with open(path_save_pca_results, "wb") as f:
+            np.save(f, results_pca)
+
         path_save_pca_components = os.path.join(
             os.path.join(output_directory, "pca_components.npy")
         )
@@ -248,28 +256,62 @@ def perform_pca(
 
         fig = plt.figure(figsize=(4, 3), dpi=300)
         ax1 = fig.add_axes([0.2, 0.2, 0.7, 0.7])
-        scatter = ax1.scatter(results_pca[:, 0], results_pca[:, 1], c=cs, s=3)
+        scatter = ax1.scatter(
+            results_pca[:, 0],
+            results_pca[:, 1],
+            c=cs,
+            s=3,
+            cmap=plt.cm.gist_rainbow,
+        )
         ax1.legend(
             handles=scatter.legend_elements()[0],
             labels=unique_slide_names,
             prop={"size": 6},
         )
         ax1.set_xlabel(
-            f"PC1 ({round(pca_explained_variance_ratio[0]*100, 2)}% variance explained)",
+            f"PC1 ({round(pca_explained_variance_ratio[0]*100, 1)}% variance explained)",
             size=8,
         )
         ax1.set_ylabel(
-            f"PC2 ({round(pca_explained_variance_ratio[1]*100, 2)}% variance explained)",
+            f"PC2 ({round(pca_explained_variance_ratio[1]*100, 1)}% variance explained)",
             size=8,
         )
         for ax in [ax1]:
             ax.tick_params(axis="both", which="major", labelsize=6)
             ax.tick_params(axis="both", which="minor", labelsize=6)
         plt.savefig(path_save_plot_pca_components, dpi=300)
+        plt.close()
 
         path_save_plot_pca_components_with_loading = os.path.join(
-            os.path.join(output_directory, "pca_components_with_loading.pdf")
+            os.path.join(output_directory, "pca_components_scaled_with_loading.pdf")
         )
+        fig = plt.figure(figsize=(4, 3), dpi=300)
+        ax1 = fig.add_axes([0.2, 0.2, 0.7, 0.7])
+        scale_x = 1 / (results_pca[:, 0].max() - results_pca[:, 0].min())
+        scale_y = 1 / (results_pca[:, 1].max() - results_pca[:, 1].min())
+        scatter = ax1.scatter(
+            results_pca[:, 0] * scale_x,
+            results_pca[:, 1] * scale_y,
+            c=cs,
+            s=3,
+            cmap=plt.cm.gist_rainbow,
+        )
+        ax1.legend(
+            handles=scatter.legend_elements()[0],
+            labels=unique_slide_names,
+            prop={"size": 6},
+        )
+        ax1.set_xlabel(
+            f"PC1 ({round(pca_explained_variance_ratio[0]*100, 1)}% variance explained)",
+            size=8,
+        )
+        ax1.set_ylabel(
+            f"PC2 ({round(pca_explained_variance_ratio[1]*100, 1)}% variance explained)",
+            size=8,
+        )
+        for ax in [ax1]:
+            ax.tick_params(axis="both", which="major", labelsize=6)
+            ax.tick_params(axis="both", which="minor", labelsize=6)
         for pc1, pc2 in loadings:
             ax1.plot([0, pc1], [0, pc2])
         plt.savefig(path_save_plot_pca_components_with_loading, dpi=300)
@@ -279,12 +321,161 @@ def perform_pca(
     return pca_attributes
 
 
-def perform_tsne():
-    pass
+def perform_tsne(
+    data: pd.DataFrame,
+    output_directory: str,
+    n_components: int = 2,
+    perplexity: float = 30,
+    save_plot: bool = True,
+    save_array: bool = True,
+) -> Dict[str, np.ndarray]:
+
+    features = data[
+        [col for col in data.columns if col not in ["slide", "image_tile", "label"]]
+    ]
+
+    tsne = TSNE(n_components=n_components, perplexity=perplexity)
+    results_tsne = tsne.fit_transform(features)
+    tsne_attributes = {"embedding_": tsne.embedding_}
+
+    if save_array:
+        path_save_tsne_results = os.path.join(
+            os.path.join(output_directory, "results_tsne.npy")
+        )
+        with open(path_save_tsne_results, "wb") as f:
+            np.save(f, results_tsne)
+
+        path_save_tsne_embedding = os.path.join(
+            os.path.join(output_directory, "tsne_embedding.npy")
+        )
+        with open(path_save_tsne_embedding, "wb") as f:
+            np.save(f, tsne.embedding_)
+
+    if save_plot:
+        path_save_plot_tsne_embedding = os.path.join(
+            os.path.join(output_directory, "tsne_embedding.pdf")
+        )
+        unique_slide_names = np.unique(data.slide).tolist()
+        colorvals = np.linspace(0, 1, len(unique_slide_names))
+
+        cs = [
+            colorvals[unique_slide_names.index(slide_name)] for slide_name in data.slide
+        ]
+
+        fig = plt.figure(figsize=(4, 3), dpi=300)
+        ax1 = fig.add_axes([0.2, 0.2, 0.7, 0.7])
+        scatter = ax1.scatter(
+            results_tsne[:, 0], results_tsne[:, 1], c=cs, s=3, cmap=plt.cm.gist_rainbow
+        )
+        ax1.legend(
+            handles=scatter.legend_elements()[0],
+            labels=unique_slide_names,
+            prop={"size": 6},
+        )
+        ax1.set_xlabel(
+            "t-SNE 1",
+            size=8,
+        )
+        ax1.set_ylabel(
+            "t-SNE 2",
+            size=8,
+        )
+        for ax in [ax1]:
+            ax.tick_params(axis="both", which="major", labelsize=6)
+            ax.tick_params(axis="both", which="minor", labelsize=6)
+        plt.savefig(path_save_plot_tsne_embedding, dpi=300)
+        plt.close()
+
+    return tsne_attributes
 
 
-def perform_umap():
-    pass
+def perform_umap(
+    data: pd.DataFrame,
+    output_directory: str,
+    n_neighbors: int = 10,
+    min_dist: float = 0.1,
+    metric: str = "euclidean",
+    save_plot: bool = True,
+    save_array: bool = True,
+):
+    features = data[
+        [col for col in data.columns if col not in ["slide", "image_tile", "label"]]
+    ]
+
+    umap = UMAP(n_neighbors=n_neighbors, min_dist=min_dist, metric=metric)
+    results_umap = umap.fit_transform(features)
+
+    umap_embedding = umap.embedding_
+    umap_graph = umap.graph_
+    umap_graph_dists = umap.graph_dists_
+
+    umap_attributes = {
+        "embedding_": umap_embedding,
+        "graph_": umap_graph,
+        "graph_dists": umap_graph_dists,
+    }
+
+    if save_array:
+        path_save_umap_results = os.path.join(
+            os.path.join(output_directory, "results_umap.npy")
+        )
+        with open(path_save_umap_results, "wb") as f:
+            np.save(f, results_umap)
+
+        path_save_umap_embedding = os.path.join(
+            os.path.join(output_directory, "umap_embedding.npy")
+        )
+        with open(path_save_umap_embedding, "wb") as f:
+            np.save(f, umap.embedding_)
+
+        path_save_umap_graph = os.path.join(
+            os.path.join(output_directory, "umap_graph.npy")
+        )
+        with open(path_save_umap_graph, "wb") as f:
+            np.save(f, umap.graph_)
+
+        path_save_umap_graph_dist = os.path.join(
+            os.path.join(output_directory, "umap_graph_dist.npy")
+        )
+        with open(path_save_umap_graph_dist, "wb") as f:
+            np.save(f, umap.graph_dists_)
+
+    if save_plot:
+        path_save_plot_umap_embedding = os.path.join(
+            os.path.join(output_directory, "umap_embedding.pdf")
+        )
+        unique_slide_names = np.unique(data.slide).tolist()
+        colorvals = np.linspace(0, 1, len(unique_slide_names))
+
+        cs = [
+            colorvals[unique_slide_names.index(slide_name)] for slide_name in data.slide
+        ]
+
+        fig = plt.figure(figsize=(4, 3), dpi=300)
+        ax1 = fig.add_axes([0.2, 0.2, 0.7, 0.7])
+        scatter = ax1.scatter(
+            results_umap[:, 0], results_umap[:, 1], c=cs, s=3, cmap=plt.cm.gist_rainbow
+        )
+        ax1.legend(
+            handles=scatter.legend_elements()[0],
+            labels=unique_slide_names,
+            prop={"size": 6},
+        )
+        ax1.set_xlabel(
+            "UMAP 1",
+            size=8,
+        )
+        ax1.set_ylabel(
+            "UMAP 2",
+            size=8,
+        )
+        for ax in [ax1]:
+            ax.tick_params(axis="both", which="major", labelsize=6)
+            ax.tick_params(axis="both", which="minor", labelsize=6)
+        plt.savefig(path_save_plot_umap_embedding, dpi=300)
+        plt.close()
+
+    return umap_attributes
 
 
 def save_plots():
