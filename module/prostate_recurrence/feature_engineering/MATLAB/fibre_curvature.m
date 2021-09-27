@@ -6,7 +6,8 @@ function [discrete_fibre_curvature,curvature_matrix,curvature_continuum] = fibre
 %   calculates fibre curvature from CTFire output. Output includes a 
 %   structure array of all curvatures and an equivalent
 %   matrix of all curvature values. Where fibres overlap on the matrix the 
-%   average curvature is calculated.  
+%   average curvature is calculated. Curvature of zero is adjusted to 
+%   10^(-50) to avoid issues with the skewness and kurtosis functions. 
 %
 %   Input:
 %   ctfire_fibres: Structure array of discrete CTFire fibres. Used to 
@@ -49,13 +50,15 @@ for I=1:length(ctfire_fibres)
     curvature=abs(LineCurvature2D(Vertices));
     discrete_fibre_curvature(I).curvature =  curvature(ctfire_point);
     
-    linearInd = sub2ind(size(fibre_matrix),discrete_fibre.y,discrete_fibre.x);
-    curvature_matrix(linearInd)=discrete_fibre_curvature(I).curvature;
+    if max(isnan(curvature))==0%If fibre contains only two points then will produce NaN values
+        linearInd = sub2ind(size(fibre_matrix),discrete_fibre.y,discrete_fibre.x);
+        curvature_matrix(linearInd)=discrete_fibre_curvature(I).curvature;
     
-%   Recorded so we can search for cases of overlapping fibres and take average values 
-    all_curvature=[all_curvature;curvature(ctfire_point)];
-    all_x_location=[all_x_location;discrete_fibre.x];
-    all_y_location=[all_y_location;discrete_fibre.y];
+    %   Recorded so we can search for cases of overlapping fibres and take average values 
+        all_curvature=[all_curvature;curvature(ctfire_point)];
+        all_x_location=[all_x_location;discrete_fibre.x];
+        all_y_location=[all_y_location;discrete_fibre.y];
+    end
 end
 %This functionality is used to calculate the average values of x and y
 %derivatives and angles where multiple fibres cross the same location.
@@ -67,5 +70,6 @@ for J=1:length(find_overlaps)
     curvature_matrix(GR(find_overlaps(J))) = mean_curvature;
 end
 curvature_continuum  = inpaint_nans(curvature_matrix,4); %Use spring metaphor method for inpainting
+curvature_continuum(curvature_continuum==0)=10^-50;
 end
 

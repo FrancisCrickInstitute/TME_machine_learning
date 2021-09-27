@@ -35,8 +35,8 @@ rgb_image = ind2rgb(periodic_index, huemap);
 if file_type(1) ~= '.'
     file_type=['.' file_type];
 end
-if directory(end)~='\'
-    directory=[directory '\'];
+if directory(end)~='/'
+    directory=[directory '/'];
 end
 image_name = [directory file_name file_type];
 imwrite(uint8(255*rgb_image),huemap,image_name);

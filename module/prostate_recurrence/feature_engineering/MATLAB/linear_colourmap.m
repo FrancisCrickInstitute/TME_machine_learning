@@ -1,4 +1,14 @@
 function linear_colourmap(directory,file_name,file_type,input_matrix,colourmap,include_colourbar,colourbar_name,max_input,min_input)
+
+% directory=save_directory;
+% file_name=save_filename;
+% file_type=output_filetype;
+% input_matrix=plotted_matrix;
+% colourmap='parula';
+% include_colourbar=0;
+% colourbar_name='Curvature';
+% max_input=[]
+% min_input=[]
 %PERIODIC_COLOURMAP Saves periodic input matrix using hsv wraparound
 %colourmap
 %
@@ -42,8 +52,8 @@ rgb_image = ind2rgb(linear_index, cm);
 if file_type(1) ~= '.'
     file_type=['.' file_type];
 end
-if directory(end)~='\'
-    directory=[directory '\'];
+if directory(end)~='/'
+    directory=[directory '/'];
 end
 image_name = [directory file_name file_type];
 imwrite(uint8(255*rgb_image),cm,image_name);

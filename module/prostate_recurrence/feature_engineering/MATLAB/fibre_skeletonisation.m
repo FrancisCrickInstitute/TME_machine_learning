@@ -5,10 +5,10 @@ function [fibre_skeleton,fibre_branchpoints,fibre_endpoints,fibre_disconnected_b
 %   [fibre_skeleton,fibre_branchpoints,...
 %    fibre_endpoints,fibre_disconnected_branches] 
 %   = fibre_skeletonisation(fibre_matrix) skeletonises fibre_matrix and
-%   extracts a barnchpoint map, endpoint map and disconnected branches map.
+%   extracts a branchpoint map, endpoint map and disconnected branches map.
 %
 %   Input:
-%   fibre_matrix: matrix of labelled discret fibres. 
+%   fibre_matrix: matrix of labelled discreet fibres. 
 %
 %   Output:
 %   fibre_skeleton: binary matrix of skeletonised fibre network

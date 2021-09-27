@@ -133,7 +133,7 @@ switch stats_function
     case{'max'}
         convolution_function = ['@(x) max(' input_vector ')'];
     case{'lower quartile'}
-        convolution_function = ['@(x) prctile(' input_vector ',25)']
+        convolution_function = ['@(x) prctile(' input_vector ',25)'];
     case{'upper quartile'}
         convolution_function = ['@(x) prctile(' input_vector ',75)'];
     case{'skewness'}
@@ -142,6 +142,6 @@ switch stats_function
         convolution_function = ['@(x) kurtosis(' input_vector ')'];
 end
 convolution_image = nlfilter(analyzed_image,[filtersize filtersize],eval(convolution_function));
-output_image = convolution_image(radius:rows+radius,radius:cols+radius);
+output_image = convolution_image(radius+1:rows+radius,radius+1:cols+radius);
 end
 
