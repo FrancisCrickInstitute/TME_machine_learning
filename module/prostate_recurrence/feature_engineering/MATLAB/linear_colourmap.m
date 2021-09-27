@@ -9,25 +9,29 @@ function linear_colourmap(directory,file_name,file_type,input_matrix,colourmap,i
 % colourbar_name='Curvature';
 % max_input=[]
 % min_input=[]
-%PERIODIC_COLOURMAP Saves periodic input matrix using hsv wraparound
-%colourmap
+%LINEAR_COLOURMAP Saves linear input matrix using user defined colormap
 %
-%   periodic_colourmap(directory,file_name,file_type,periodic_matrix,
-%   include_colourbar) hsv colourmap of the input angle matrix (discrete or
-%   continuum, end to end or local). A colourbar with corresponding radian 
-%   colours is also optionally generated. 
+%   linear_colourmap(directory,file_name,file_type,input_matrix,colourmap,
+%   include_colourbar,colourbar_name,max_input,min_input) colourmap of the
+%   non-periodic input matrix (discrete or continuum). 
+%   A colourbar is also optionally generated. 
 %
 %   Input:
 %   directory: Location where colourmaps are saved.
 %   file_name: Save name of colourmap.
 %   file_type: Save image type (tif, jpeg etc.)
-%   periodic_matrix: The matrix of angles used to generate image output.
+%   input_matrix: The matrix of input image.
+%   colormap: Name of colourmap used.
 %   include_colourbar: 1 for True, 0 for false.
+%   colourbar_name: name of file name for colourbar output.
+%   max_input: Maximum value - values beyond this are saturated.
+%   min_input: Minimum value - values beyond this are saturated.
 %
 %
-%   Class support for inputs directory, file_name, file_type:
+%   Class support for inputs: directory, file_name, colourmap, file_type:
 %      string
-%   Class support for inputs periodic_matrix and include_colourbar:
+%   Class support for inputs input_matrix, include_colourbar, max_input and 
+%   min_input:
 %      float: single, double, int: uint8, uint16, uint64
 %   
 %
