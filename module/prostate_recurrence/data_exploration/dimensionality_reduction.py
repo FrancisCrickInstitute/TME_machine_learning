@@ -1,16 +1,40 @@
 """# dimensionality reduction
 
 ## read_data(...) to read tabulated data that record a list of quantative features.
+This function expects a list of paths to data that contain the quantitative features
+as input and returns combined feature values for all image tiles in a data frame.
+The header of the data frame includes "slide", "image_tile", "label", which combines
+slide and tile information, and the names of all features. The rows of the data frame
+record readouts from individual image tiles.
 
 ## process_data(...) to process the data prior to performing dimensionality reduction.
+This function expects combined feature values for all image tiles in a data frame and
+the type of processing as input and returns a tuple of two data frames. The first data
+frame contains the processed feature values for all image tiles. The second data frame
+contains the attributes of the processing procedure.
 
 ## perform_pca(...) to perform principal component analysis.
+This function expects as input the processed feature values for all image tiles in a
+data frame, the directory to write outputs into, the number of components to keep for
+PCA, and two boolean variables indicating whether to save plots and arrays. By default,
+all PCA components are kept, and plots and arrays are saved into the designated directory.
+This function returns a dictionary recording the results of PCA together with other useful
+outputs.
 
 ## perform_tsne(...) to perform t-SNE.
+This function expects as inputs the processed feature values for all image tiles in a
+data frame, the directory to write outputs into, the number of components to keep for
+t-SNE, perplexity parameter, and two boolean variables indicating whether to save plots
+and arrays. By default, the low-dimensional space is represented with respect to two t-SNE
+components, and plots and arrays are saved into the designated directory. This function
+returns a dictionary recording the results of t-SNE embedding.
 
 ## perform_umap(...) to perform UMAP.
-
-## save_plots(...) to save plots.
+This function expects as inputs the processed feature values for all image tiles in a
+data frame, the directory to write outputs into, settings for UMAP analysis, and two
+boolean variables indicating whether to save plots and arrays. By default, plots and arrays
+are saved into the designated directory. This function returns a dictionary recording the
+results of UMAP embedding and other attributes.
 
 """
 
@@ -329,6 +353,37 @@ def perform_tsne(
     save_plot: bool = True,
     save_array: bool = True,
 ) -> Dict[str, np.ndarray]:
+    """perform t-SNE
+    This function expects a data frame, which records quantitative features
+    and labels reflecting slide and image tile identifiers, an output directory,
+    and settings as input parameters. Optional parameters include the number
+    of components with respect to which low-dimensional embedding is constructed,
+    perplexity parameter, and flags indicating whether to save t-SNE outputs,
+    including plots and numpy arrays. This function returns a dictionary of attributes
+    of the fit t-SNE embedding.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        a data frame of quantiative features and labels.
+    output_directory : str
+        an output directory to save t-SNE outputs into.
+    n_components : int, optional
+        the number of components with repect to which t-SNE embedding is constructed,
+        by default 2
+    perplexity : float, optional
+        parameter balancing local and global effects, by default 30
+    save_plot : bool, optional
+        a boolean variable indicating whether to save plots, by default True
+    save_array : bool, optional
+        a boolean variable indicating whether to save arrays, by default True
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        a dictionary of attributes of t-SNE, including the following:
+        "embedding_": n_samples x n_components array
+    """
 
     features = data[
         [col for col in data.columns if col not in ["slide", "image_tile", "label"]]
@@ -397,7 +452,41 @@ def perform_umap(
     metric: str = "euclidean",
     save_plot: bool = True,
     save_array: bool = True,
-):
+) -> Dict[str, np.ndarray]:
+    """perform UMAP
+    This function expects a data frame, which records quantitative features
+    and labels reflecting slide and image tile identifiers, an output directory,
+    and settings as input parameters. Optional parameters include settings as
+    described below and flags indicating whether to save UMAP outputs, including
+    plots and numpy arrays. This function returns a dictionary of attributes
+    of the fit UMAP embedding.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        a data frame of quantiative features and labels.
+    output_directory : str
+        an output directory to save UMAP outputs into.
+    n_neighbors : int, optional
+        parameter balancing local and global effects, by default 10
+    min_dist : float, optional
+        parameter controlling how tightly data points are packed, by default 0.1
+    metric : str, optional
+        parameter indicating how distance is computed in the ambient space of
+        input data, by default "euclidean"
+    save_plot : bool, optional
+        a boolean variable indicating whether to save plots, by default True
+    save_array : bool, optional
+        a boolean variable indicating whether to save arrays, by default True
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        a dictionary of attributes of UMAP, including the following:
+        "embedding_": n_samples x n_components array
+        "graph_": [... not explored ...]
+        "graph_dists": [... not explored ...]
+    """
     features = data[
         [col for col in data.columns if col not in ["slide", "image_tile", "label"]]
     ]
@@ -476,7 +565,3 @@ def perform_umap(
         plt.close()
 
     return umap_attributes
-
-
-def save_plots():
-    pass
