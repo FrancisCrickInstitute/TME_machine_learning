@@ -1,14 +1,6 @@
-function linear_colourmap(directory,file_name,file_type,input_matrix,colourmap,include_colourbar,colourbar_name,max_input,min_input)
+function linear_colourmap(directory,file_name,file_type,input_matrix,...
+    colourmap,include_colourbar,colourbar_name,max_input,min_input)
 
-% directory=save_directory;
-% file_name=save_filename;
-% file_type=output_filetype;
-% input_matrix=plotted_matrix;
-% colourmap='parula';
-% include_colourbar=0;
-% colourbar_name='Curvature';
-% max_input=[]
-% min_input=[]
 %LINEAR_COLOURMAP Saves linear input matrix using user defined colormap
 %
 %   linear_colourmap(directory,file_name,file_type,input_matrix,colourmap,
