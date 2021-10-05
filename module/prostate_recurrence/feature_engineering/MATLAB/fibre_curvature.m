@@ -1,4 +1,5 @@
-function [discrete_fibre_curvature,curvature_matrix,curvature_continuum] = fibre_curvature(ctfire_fibres, discrete_fibres, fibre_matrix)
+function [discrete_fibre_curvature,curvature_matrix,curvature_continuum]...
+    = fibre_curvature(ctfire_fibres, discrete_fibres, fibre_matrix)
 %FIBRE_CURVATURE Calculate curvature for each discrete fibre
 %
 %   [discrete_fibre_curvature,curvature_matrix] = 
@@ -45,16 +46,19 @@ all_y_location=[];
 for I=1:length(ctfire_fibres)
     ctfire_fibre = ctfire_fibres(I);
     discrete_fibre=discrete_fibres(I);
-    ctfire_point = discrete_fibres(I).ctfire_point; %Mapping from discontinuous to continuous fibres
+    %Mapping from discontinuous to continuous fibres
+    ctfire_point = discrete_fibres(I).ctfire_point; 
     Vertices=[ctfire_fibre.x,ctfire_fibre.y];
     curvature=abs(LineCurvature2D(Vertices));
     discrete_fibre_curvature(I).curvature =  curvature(ctfire_point);
-    
-    if max(isnan(curvature))==0%If fibre contains only two points then will produce NaN values
-        linearInd = sub2ind(size(fibre_matrix),discrete_fibre.y,discrete_fibre.x);
+    %If fibre contains only two points then will produce NaN values
+    if max(isnan(curvature))==0
+        linearInd = ...
+            sub2ind(size(fibre_matrix),discrete_fibre.y,discrete_fibre.x);
         curvature_matrix(linearInd)=discrete_fibre_curvature(I).curvature;
     
-    %   Recorded so we can search for cases of overlapping fibres and take average values 
+    %   Recorded so we can search for cases of overlapping fibres and take 
+    %   average values 
         all_curvature=[all_curvature;curvature(ctfire_point)];
         all_x_location=[all_x_location;discrete_fibre.x];
         all_y_location=[all_y_location;discrete_fibre.y];
@@ -66,10 +70,12 @@ linearInd = sub2ind(size(fibre_matrix),all_y_location,all_x_location);
 [GC,GR] = groupcounts(linearInd);
 find_overlaps=find(GC>1);
 for J=1:length(find_overlaps)
-    mean_curvature=mean(all_curvature(find(linearInd==GR(find_overlaps(J)))));
+    mean_curvature = ...
+        mean(all_curvature(find(linearInd==GR(find_overlaps(J)))));
     curvature_matrix(GR(find_overlaps(J))) = mean_curvature;
 end
-curvature_continuum  = inpaint_nans(curvature_matrix,4); %Use spring metaphor method for inpainting
+%Use spring metaphor method for inpainting
+curvature_continuum  = inpaint_nans(curvature_matrix,4); 
 curvature_continuum(curvature_continuum==0)=10^-50;
 end
 

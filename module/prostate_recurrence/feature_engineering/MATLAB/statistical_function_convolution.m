@@ -1,4 +1,6 @@
-function [output_image,output_length] = statistical_function_convolution(input_continuum,radius,stats_function,logical_boundary,type)
+function [output_image,output_length] = ...
+    statistical_function_convolution(input_continuum,radius,...
+    stats_function,logical_boundary,type)
 %STATISTICAL_FUNCTION_CONVOLUTION carries out convolutions of statistical
 %functions on continuum matrices.
 %
@@ -94,7 +96,8 @@ horz_repeated_input = [horz_flip_input;input_continuum;horz_flip_input];
 vert_flip = horz_repeated_input(:,end:-1:1);
 full_periodic_image = [vert_flip,horz_repeated_input,vert_flip];
 [full_rows,full_cols] = size(full_periodic_image);
-analyzed_image = full_periodic_image(rows+1-radius:2*rows+radius,cols+1-radius:2*cols+radius);
+analyzed_image = full_periodic_image(rows+1-radius:2*rows+radius,...
+    cols+1-radius:2*cols+radius);
 
 switch logical_boundary
     case 1
@@ -109,9 +112,11 @@ switch type
     case 0
         input_vector = 'x(boundary_location)';
     case 1
-        input_vector = 'subtract_angles(x(centre_index),x(boundary_location))';
+        input_vector = ...
+            'subtract_angles(x(centre_index),x(boundary_location))';
     case 2
-        input_vector = 'ratio_angles(x(centre_index),x(boundary_location))';
+        input_vector = ...
+            'ratio_angles(x(centre_index),x(boundary_location))';
     case 3
         input_vector = 'x(centre_index)-x(boundary_location)';
 end
@@ -141,7 +146,9 @@ switch stats_function
     case{'kurtosis'}
         convolution_function = ['@(x) kurtosis(' input_vector ')'];
 end
-convolution_image = nlfilter(analyzed_image,[filtersize filtersize],eval(convolution_function));
-output_image = convolution_image(radius+1:rows+radius,radius+1:cols+radius);
+convolution_image = nlfilter(analyzed_image,[filtersize filtersize],...
+    eval(convolution_function));
+output_image = ...
+    convolution_image(radius+1:rows+radius,radius+1:cols+radius);
 end
 

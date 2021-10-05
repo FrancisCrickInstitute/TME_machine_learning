@@ -1,4 +1,5 @@
-function [ctfire_fibres fibre_matrix discrete_fibres] = load_ctfire_data(ctfire_file,image_file,minimum_fibre_length)
+function [ctfire_fibres fibre_matrix discrete_fibres] = ...
+    load_ctfire_data(ctfire_file,image_file,minimum_fibre_length)
 %LOAD_CTFIRE_DATA Load and transform CTFire output fibre data
 %
 %   [ctfire_fibres fibre_matrix discrete_fibres] = 
@@ -59,7 +60,8 @@ for single_fibre = 1:number_fibres
     ctfire_fibres(single_fibre).x=x_fibre;
     ctfire_fibres(single_fibre).y=y_fibre;
     
-    fibre_line=[x_fibre(1:end-1), y_fibre(1:end-1), x_fibre(2:end), y_fibre(2:end)];
+    fibre_line=[x_fibre(1:end-1), y_fibre(1:end-1), ...
+        x_fibre(2:end), y_fibre(2:end)];
     mask=zeros(row_dim, col_dim);
     mask=insertShape(mask,'line',fibre_line,'LineWidth',1);
     mask=mask(:,:,1);
@@ -70,16 +72,22 @@ for single_fibre = 1:number_fibres
     discrete_fibres(single_fibre).y=y_fibre;
     x_fibre_all=[x_fibre_all;x_fibre];
     y_fibre_all=[y_fibre_all;y_fibre];
-    index_fibre_all=[index_fibre_all;zeros(length(x_fibre),1)+single_fibre];
+    index_fibre_all = ...
+        [index_fibre_all;zeros(length(x_fibre),1)+single_fibre];
     
     %For the continuous fibre form, discrete_fibre, find the closest point
     %from ctfire_fibres so that we impose angle information from 
     %ctfire_fibres to the closest point in discrete_fibres
-    discrete_x_mesh = repmat(discrete_fibres(single_fibre).x,1,length(ctfire_fibres(single_fibre).x));
-    discrete_y_mesh = repmat(discrete_fibres(single_fibre).y,1,length(ctfire_fibres(single_fibre).y));
-    ctfire_x_mesh = repmat(ctfire_fibres(single_fibre).x,1,length(discrete_fibres(single_fibre).x))';
-    ctfire_y_mesh = repmat(ctfire_fibres(single_fibre).y,1,length(discrete_fibres(single_fibre).y))';
-    distance_transform = ((discrete_x_mesh-ctfire_x_mesh).^2+(discrete_y_mesh-ctfire_y_mesh).^2).^0.5;
+    discrete_x_mesh = repmat(discrete_fibres(single_fibre).x,1,...
+        length(ctfire_fibres(single_fibre).x));
+    discrete_y_mesh = repmat(discrete_fibres(single_fibre).y,1,...
+        length(ctfire_fibres(single_fibre).y));
+    ctfire_x_mesh = repmat(ctfire_fibres(single_fibre).x,1,...
+        length(discrete_fibres(single_fibre).x))';
+    ctfire_y_mesh = repmat(ctfire_fibres(single_fibre).y,1,...
+        length(discrete_fibres(single_fibre).y))';
+    distance_transform = ((discrete_x_mesh-ctfire_x_mesh).^2+...
+        (discrete_y_mesh-ctfire_y_mesh).^2).^0.5;
     [~,ctfire_point] = min(distance_transform,[],2);
     discrete_fibres(single_fibre).ctfire_point = ctfire_point;
     

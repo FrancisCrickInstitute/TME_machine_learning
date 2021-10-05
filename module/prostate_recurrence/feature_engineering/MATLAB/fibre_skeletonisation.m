@@ -1,4 +1,5 @@
-function [fibre_skeleton,fibre_branchpoints,fibre_endpoints,fibre_disconnected_branches] = fibre_skeletonisation(fibre_matrix)
+function [fibre_skeleton,fibre_branchpoints,fibre_endpoints,...
+    fibre_disconnected_branches] = fibre_skeletonisation(fibre_matrix)
 %FIBRE_SKELETONISATION Transform fibre network to fibre skeleton to allow
 %graph theory based analysis of fibre matrix 
 %
@@ -18,8 +19,8 @@ function [fibre_skeleton,fibre_branchpoints,fibre_endpoints,fibre_disconnected_b
 %   removal of branchpoints
 %
 %
-%   The below code for branchpoints and endpoints appears to work better than
-%   MATLAB's inbuilt functionality for 8 connected neighbourhoods.
+%   The below code for branchpoints and endpoints appears to work better 
+%   than MATLAB's inbuilt functionality for 8 connected neighbourhoods.
 %
 %   Class support for input fibre_matrix:
 %      float: single, double, int: uint8, uint16, uint64
@@ -30,7 +31,8 @@ function [fibre_skeleton,fibre_branchpoints,fibre_endpoints,fibre_disconnected_b
 fibre_matrix(isnan(fibre_matrix))=0;
 fibre_matrix = logical(fibre_matrix);
 fibre_skeleton = bwmorph(fibre_matrix,'skel',Inf);
-fibre_branchpoints=bwlookup(fibre_skeleton,  makelut(@(x) sum(x(:))>=4 & x(5)==1,3));
+fibre_branchpoints = ...
+    bwlookup(fibre_skeleton,  makelut(@(x) sum(x(:))>=4 & x(5)==1,3));
 endpoint_fcn = @(nhood) (nhood(2,2) ~= 0) && (sum(nhood(:)) == 2);
 endpoint_lut = makelut(endpoint_fcn, 3);
 fibre_endpoints = applylut(fibre_skeleton, endpoint_lut);

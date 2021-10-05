@@ -1,4 +1,9 @@
-function [end_to_end_angle_continuum,end_to_end_x_derivative_continuum,end_to_end_y_derivative_continuum,local_angle_continuum,local_x_derivative_continuum,local_y_derivative_continuum] = fibre_angle_continuum(end_to_end_x_derivative_matrix,end_to_end_y_derivative_matrix,local_x_derivative_matrix,local_y_derivative_matrix)
+function [end_to_end_angle_continuum,end_to_end_x_derivative_continuum,...
+    end_to_end_y_derivative_continuum,local_angle_continuum,...
+    local_x_derivative_continuum,local_y_derivative_continuum] = ...
+    fibre_angle_continuum(end_to_end_x_derivative_matrix,...
+    end_to_end_y_derivative_matrix,local_x_derivative_matrix,...
+    local_y_derivative_matrix)
 %FIBRE_ANGLE_CONTINUUM Interpolate over NaN values to create a continuum of
 %fibre angles from discrete fibre points.
 %
@@ -41,7 +46,7 @@ function [end_to_end_angle_continuum,end_to_end_x_derivative_continuum,end_to_en
 %
 %   Matrices are interpolated using inpaint_nans:
 %   John D'Errico (2021). inpaint_nans 
-%   (https://www.mathworks.com/matlabcentral/fileexchange/4551-inpaint_nans),
+%  (https://www.mathworks.com/matlabcentral/fileexchange/4551-inpaint_nans)
 %   MATLAB Central File Exchange. Retrieved May 5, 2021.)
 %
 %   Class support for inputs end_to_end_x_derivative_matrix,
@@ -52,15 +57,24 @@ function [end_to_end_angle_continuum,end_to_end_x_derivative_continuum,end_to_en
 %
 %   This work is licensed under a Creative Commons Attribution 4.0 
 %   International License.
-end_to_end_x_derivative_continuum  = inpaint_nans(end_to_end_x_derivative_matrix,4); %Use spring metaphor method for inpainting
-end_to_end_y_derivative_continuum  = inpaint_nans(end_to_end_y_derivative_matrix,4);
-[end_to_end_x_derivative_continuum,end_to_end_y_derivative_continuum] = vector_normalisation(end_to_end_x_derivative_continuum,end_to_end_y_derivative_continuum);
-%end_to_end_angle_continuum = atan(end_to_end_y_derivative_continuum./end_to_end_x_derivative_continuum);
+%Use spring metaphor method for inpainting
+end_to_end_x_derivative_continuum  = ...
+    inpaint_nans(end_to_end_x_derivative_matrix,4); 
+end_to_end_y_derivative_continuum  = ...
+    inpaint_nans(end_to_end_y_derivative_matrix,4);
+[end_to_end_x_derivative_continuum,end_to_end_y_derivative_continuum] = ...
+    vector_normalisation(end_to_end_x_derivative_continuum,...
+    end_to_end_y_derivative_continuum);
+%end_to_end_angle_continuum = atan(end_to_end_y_derivative_continuum./...
+%end_to_end_x_derivative_continuum);
 end_to_end_angle_continuum = acos(end_to_end_y_derivative_continuum);
 local_x_derivative_continuum  = inpaint_nans(local_x_derivative_matrix,4);
 local_y_derivative_continuum  = inpaint_nans(local_y_derivative_matrix,4);
-[local_x_derivative_continuum,local_y_derivative_continuum] = vector_normalisation(local_x_derivative_continuum,local_y_derivative_continuum);
-%local_angle_continuum = atan(local_y_derivative_continuum./local_x_derivative_continuum);
+[local_x_derivative_continuum,local_y_derivative_continuum] = ...
+    vector_normalisation(local_x_derivative_continuum,...
+    local_y_derivative_continuum);
+%local_angle_continuum = atan(local_y_derivative_continuum./...
+%local_x_derivative_continuum);
 local_angle_continuum = acos(local_y_derivative_continuum);
 
 end

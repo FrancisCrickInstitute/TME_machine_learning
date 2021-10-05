@@ -58,7 +58,9 @@ if include_colourbar == 1
     ax = axes;
     x=0:0.25:1;
     colormap(cm)
-    c = colorbar('Ticks',x,'TickLabels',min_input:(max_input-min_input)/4:max_input,'LineWidth',3,'FontSize',20,'Location','west');
+    c = colorbar('Ticks',x,'TickLabels',...
+        min_input:(max_input-min_input)/4:max_input,...
+        'LineWidth',3,'FontSize',20,'Location','west');
     %c.Label.String = 'Angle (radians)';
     c.Label.FontWeight = 'bold';
     ax.Visible = 'off';
