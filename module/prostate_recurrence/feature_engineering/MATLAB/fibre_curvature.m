@@ -53,8 +53,11 @@ for I=1:length(ctfire_fibres)
     discrete_fibre_curvature(I).curvature =  curvature(ctfire_point);
     %If fibre contains only two points then will produce NaN values
     if max(isnan(curvature))==0
-        linearInd = ...
-            sub2ind(size(fibre_matrix),discrete_fibre.y,discrete_fibre.x);
+        linearInd = sub2ind(...
+            size(fibre_matrix),...
+            discrete_fibre.y,...
+            discrete_fibre.x...
+            );
         curvature_matrix(linearInd)=discrete_fibre_curvature(I).curvature;
     
     %   Recorded so we can search for cases of overlapping fibres and take 
@@ -71,7 +74,8 @@ linearInd = sub2ind(size(fibre_matrix),all_y_location,all_x_location);
 find_overlaps=find(GC>1);
 for J=1:length(find_overlaps)
     mean_curvature = ...
-        mean(all_curvature(find(linearInd==GR(find_overlaps(J)))));
+        mean(all_curvature(linearInd==GR(find_overlaps(J))));
+        %mean(all_curvature(find(linearInd==GR(find_overlaps(J)))));
     curvature_matrix(GR(find_overlaps(J))) = mean_curvature;
 end
 %Use spring metaphor method for inpainting
