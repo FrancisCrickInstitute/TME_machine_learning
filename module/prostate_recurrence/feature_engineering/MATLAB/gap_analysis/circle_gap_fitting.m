@@ -1,10 +1,15 @@
-function [label_matrix,centroid_row,centroid_col,circle_radius]...
-    = circle_gap_fitting(bw,minimum_radius)
+function [...
+          label_matrix,...
+          radius_label_matrix,...
+          centroid_row,...
+          centroid_col,...
+          circle_radius...
+          ] = circle_gap_fitting(bw,minimum_radius)
 
 %CIRCLE_GAP_FITTING fits the maximum sized circles that fit between gaps in
 %a logical image of background (0) and foreground (1).
 %
-%[label_matrix,centroid_row,centroid_col,circle_radius]
+%[label_matrix,radius_label_matrix,centroid_row,centroid_col,circle_radius]
 %= circle_gap_fitting(bw,minimum_radius) takes a logical matrix and fits the
 %maximum circles that fit between gaps. An input logical matrix is padded 
 %such that edges also count as fibres when calculated gap sizes. The 
@@ -22,6 +27,8 @@ function [label_matrix,centroid_row,centroid_col,circle_radius]...
 %   Output:
 %   label_matrix: Matrix of fitted circles with pixels corresponding to a
 %   given circle all given a unique label value.
+%   radius_label_matrix: Matrix of fitted circles with pixels corresponding
+%   to radius of circle pizels are part of.
 %   centroid_row: Vector of row locations of fitted circle centroids.
 %   centroid_col: Vector of column locations of fitted circle centroids.
 %   circle_radius: Vector of radii of all fitted circles.
@@ -58,6 +65,7 @@ total_circles...
 
 counter=0;
 label_matrix = zeros(padded_size);
+radius_label_matrix = zeros(padded_size);
 while isempty(radius_vector)==0
     counter=counter+1;
     
@@ -92,7 +100,8 @@ while isempty(radius_vector)==0
     centroid_col(counter)=col_mid;
     circle_radius(counter)=radius;
     %Should we take the discrete or continuous version of this?
-    label_matrix(circlePixels)=counter;
+    label_matrix(circlePixels) = counter;
+    radius_label_matrix(circlePixels) = radius;
     [...
     irows,...
     icols,...
