@@ -20,7 +20,12 @@ def read_image_information(
     method: str = "aicsimageio",
     resolution: str = "20x",
 ) -> pd.DataFrame:
-    slide_id = os.path.basename(path_to_img).split('_')[0]
+    slide_id = "_".join(
+        [
+            os.path.basename(path_to_img).split('_')[0],
+            os.path.basename(path_to_img).split('_')[1]
+        ]
+    )
     if method == "aicsimageio":
         img = AICSImage(path_to_img)
         img_info_cols = [
