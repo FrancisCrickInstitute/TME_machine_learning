@@ -107,8 +107,8 @@ def read_image_information(
 def read_image(
     path_to_img: str,
     method: str = "bioformats",
-    highest_resolution: int = 20,
-    low_resolution_keep: int = 5
+    highest_resolution: str = "20x",
+    resolution: str = "5x"
 ) -> Dict[str, Dict[str, np.ndarray]]:
     """read .czi image into a numpy array
     "aicsimageio" method reads the image only with the highest resolution
@@ -141,6 +141,7 @@ def read_image(
     if method not in allowed_methods:
         print(f"Please use one of the allowed methods : {allowed_methods}")
     elif method == "aicsimageio":
+        # read the highest resolution
         img = AICSImage(path_to_img)
         dict_imgs_with_res = {}
         dict_imgs: Dict[str, np.ndarray] = {}
@@ -162,55 +163,53 @@ def read_image(
                 o.image(i).Pixels.get_SizeX(),
                 o.image(i).Pixels.get_SizeY(),
             )
-            print(image_dim)
-
+            # print(image_dim)
             image_dims.append(
                 image_dim
             )
         df_image_dims = pd.DataFrame(
-            columns = ['X','Y'],
+            columns = ['scene_dim_x','scene_dim_y'],
             data=image_dims
         )
-        all_Xs = df_image_dims.X.values; all_Ys = df_image_dims.Y.values
-        res = highest_resolution; resolutions = [f'{res}x']
+        all_Xs = df_image_dims.scene_dim_x.values; all_Ys = df_image_dims.scene_dim_y.values
+        res = int(highest_resolution.split('x')[0])
+        resolutions = [highest_resolution]
         for j, Xi, Xj, Xk, Yi, Yj, Yk in zip(
             np.arange(all_Xs[1:].size),
             all_Xs[:-1], all_Xs[1:], all_Xs[2:],
             all_Ys[:-1], all_Ys[1:], all_Ys[2:]
         ):
-
             if Xi // Xj == 2:
                 res /= 2;
                 res_str = f'{res}x'
             else:
                 if Xj // Xk == 2:
-                    res = highest_resolution;
-                    res_str = f'{res}x'
+                    res = int(highest_resolution.split('x')[0]);
+                    res_str = highest_resolution
                 else:
                     break
             resolutions.append(res_str)
         # keep only rows reflecting data
         df_image_dims_keep = df_image_dims.copy().iloc[:len(resolutions)]
         df_image_dims_keep['Res'] = resolutions
-        keep_res = f'{low_resolution_keep}x'
+
+        keep_res = resolution
         if keep_res not in df_image_dims_keep.Res.unique():
-            keep_res = f'{low_resolution_keep}.0x'
+            resolution_int = int(resolution.split('x')[0])
+            keep_res = f'{resolution_int}.0x'
         df_image_dims_keep_small_tiff = df_image_dims_keep.loc[
             df_image_dims_keep.Res == keep_res
-        ]
-        df_image_dims_keep_large_tiff = df_image_dims_keep.loc[
-            df_image_dims_keep.Res == resolutions[0]
         ]
         # read images
         dict_imgs_with_res = {}
         for res, df in zip(
             [
                 keep_res,
-                resolutions[0],
+                # resolutions[0],
             ],
             [
                 df_image_dims_keep_small_tiff,
-                df_image_dims_keep_large_tiff
+                # df_image_dims_keep_large_tiff
             ]
         ):
             dict_imgs_with_res[res] = {}
@@ -385,6 +384,7 @@ def save_low_res_whole_slide_image(
     dict_imgs: Dict[str, np.ndarray],
     dict_masks: Dict[str, np.ndarray],
     save_path: str,
+    slide_id: str,
     resolution: str = '5x'
 ):
     for img_name in dict_imgs.keys():
@@ -412,4 +412,37 @@ def save_low_res_whole_slide_image(
                 save_path_subdir,
                 f"mask_{resolution}.tif"
             )
+        )
+
+        with open(
+            os.path.join(
+                save_path_subdir,
+                f"mask_{resolution}.npy"
+            ),
+            "wb"
+        ) as f:
+            np.save(f, mask)
+
+        mask_summary_cols = [
+            'slide_id', 'scene_name', 'scene_dim_x', 'scene_dim_y', 'resolution', 'tissue_area', 'tissue_fraction'
+        ]
+        mask_summary_rows = [
+            (
+                slide_id, img_name,
+                mask.shape[0], mask.shape[1],
+                resolution,
+                np.sum(mask)/mask.max(),
+                np.sum(mask)/mask.size
+            )
+        ]
+        mask_summary = pd.DataFrame(
+            columns=mask_summary_cols,
+            data=mask_summary_rows
+        )
+        mask_summary.to_csv(
+            os.path.join(
+                save_path_subdir,
+                f"mask_{resolution}_summary.csv"
+            ),
+            index=False
         )
