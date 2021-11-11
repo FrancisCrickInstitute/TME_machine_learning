@@ -20,14 +20,13 @@ def read_image_information(
     method: str = "aicsimageio",
     resolution: str = "20x",
 ) -> pd.DataFrame:
-
+    slide_id = os.path.basename(path_to_img).split('_')[0]
     if method == "aicsimageio":
         img = AICSImage(path_to_img)
         img_info_cols = [
             'slide_id', 'scene_name', 'scene_dim_x', 'scene_dim_y', 'resolution'
         ]
         img_info_rows = []
-        slide_id = os.path.basename(path_to_img).split('_')[0]
 
         for iid, scene in enumerate(img.scenes):
             img.set_scene(scene)
@@ -42,6 +41,59 @@ def read_image_information(
         )
 
         return img_info
+
+    elif method == "bioformats":
+        omexml = bioformats.get_omexml_metadata(path_to_img)
+        o = bioformats.OMEXML(omexml)
+        # get image dimensions (and series)
+        image_dims = []
+        for i in range(o.image_count):
+            image_dim = (
+                o.image(i).Pixels.get_SizeX(),
+                o.image(i).Pixels.get_SizeY(),
+            )
+            # print(image_dim)
+
+            image_dims.append(
+                image_dim
+            )
+        df_image_dims = pd.DataFrame(
+            columns=['scene_dim_x', 'scene_dim_y'],
+            data=image_dims
+        )
+
+        all_Xs = df_image_dims.scene_dim_x.values;
+        all_Ys = df_image_dims.scene_dim_y.values
+        res = int(resolution.split('x')[0]);
+        resolutions = [f'{res}x']
+        for j, Xi, Xj, Xk, Yi, Yj, Yk in zip(
+            np.arange(all_Xs[1:].size),
+            all_Xs[:-1], all_Xs[1:], all_Xs[2:],
+            all_Ys[:-1], all_Ys[1:], all_Ys[2:]
+        ):
+            if Xi // Xj == 2:
+                res /= 2;
+                res_str = f'{res}x'
+            else:
+                if Xj // Xk == 2:
+                    res = int(resolution.split('x')[0]);
+                    res_str = f'{res}x'
+                else:
+                    break
+            resolutions.append(res_str)# keep only rows reflecting data
+        df_image_dims_keep = df_image_dims.copy().iloc[:len(resolutions)]
+        df_image_dims_keep['resolution'] = resolutions
+
+        df_image_information = df_image_dims_keep.loc[
+            df_image_dims_keep.resolution == resolution
+        ]
+        num_scan_regions = df_image_information.shape[0]
+        scan_regions = [f'ScanRegion{idx}' for idx in range(num_scan_regions)]
+        df_image_information['slide_id'] = [slide_id for _ in range(num_scan_regions)]
+        df_image_information['scene_name'] = scan_regions
+        print(f'... {num_scan_regions} scenes in total.')
+
+        return df_image_information
 
     return pd.DataFrame()
 
