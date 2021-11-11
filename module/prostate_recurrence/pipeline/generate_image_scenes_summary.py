@@ -59,9 +59,13 @@ if __name__ == "__main__":
         )
         all_image_information = all_image_information.append(img_info)
 
+    directory_to_save_summary = os.path.join(
+        RAW_DATA_PATH,
+        "summary_of_image_scenes"
+    )
     all_image_information.to_csv(
         os.path.join(
-            RAW_DATA_PATH,
+            directory_to_save_summary,
             "all_image_information.csv"
         ),
         index=False
