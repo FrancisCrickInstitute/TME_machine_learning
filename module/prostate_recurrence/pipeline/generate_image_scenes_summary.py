@@ -63,6 +63,7 @@ if __name__ == "__main__":
         RAW_DATA_PATH,
         "summary_of_image_scenes"
     )
+    os.makedirs(directory_to_save_summary, exist_ok=True)
     all_image_information.to_csv(
         os.path.join(
             directory_to_save_summary,
