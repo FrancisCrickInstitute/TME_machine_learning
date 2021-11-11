@@ -387,6 +387,7 @@ def save_low_res_whole_slide_image(
     slide_id: str,
     resolution: str = '5x'
 ):
+    all_mask_information = pd.DataFrame()
     for img_name in dict_imgs.keys():
         img = (dict_imgs[img_name] * 255).astype(np.uint8)
         mask = dict_masks[img_name]
@@ -446,3 +447,7 @@ def save_low_res_whole_slide_image(
             ),
             index=False
         )
+
+        all_mask_information = all_mask_information.append(mask_summary)
+
+    return all_mask_information
