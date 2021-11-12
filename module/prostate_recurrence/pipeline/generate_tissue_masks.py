@@ -53,7 +53,8 @@ if MODULE_PATH not in sys.path:
 from prostate_recurrence.image_processing import tissue_mask
 
 if __name__ == "__main__":
-    MASK_RES = '5x'; MASK_RES_0 = '5.0x'
+    #MASK_RES = '5x'; MASK_RES_0 = '5.0x'
+    MASK_RES = '2.5x'; MASK_RES_0 = '2.5x'
     all_paths_to_data = natsorted(glob(
         os.path.join(
             RAW_DATA_PATH,
