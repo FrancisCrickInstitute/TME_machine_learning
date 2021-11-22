@@ -26,11 +26,13 @@ This function saves output images using Image module from the PIL library.
 """
 
 import os
+import pandas as pd
 from typing import Dict, Tuple
 
 import numpy as np
 from czifile import CziFile  # pip install czifile
 from PIL import Image
+from aicsimageio import AICSImage  # pip install AICSImage[czi]
 import javabridge, bioformats  # pip install javabridge, bioformats
 
 javabridge.start_vm(class_path=bioformats.JARS)
@@ -59,7 +61,7 @@ def read_image(
         The whole slide image as Numpy array
     """
 
-    allowed_methods = ["czifile", "bioformats"]
+    allowed_methods = ["czifile", "bioformats", "aicsimageio"]
 
     if method not in allowed_methods:
         print(f"Please use one of the allowed methods : {allowed_methods}")
@@ -67,6 +69,17 @@ def read_image(
     elif method == "czifile":
         with CziFile(path_to_img) as czi:
             return {"ScanRegion0": czi.asarray()}
+    elif method == "aicsimageio":
+        # read the highest resolution
+        img = AICSImage(path_to_img)
+        dict_imgs: Dict[str, np.ndarray] = {}
+        for iid, scene in enumerate(img.scenes):
+            img.set_scene(scene)
+            img_data = img.get_image_data(
+                "YXS", T=0, C=0, Z=0
+            )  # returns 3D YXS numpy array
+            dict_imgs[scene] = img_data
+        return dict_imgs
     elif method == "bioformats":
         omexml = bioformats.get_omexml_metadata(path_to_img)
         o = bioformats.OMEXML(omexml)
