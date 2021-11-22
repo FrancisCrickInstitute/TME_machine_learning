@@ -35,8 +35,6 @@ from PIL import Image
 from aicsimageio import AICSImage  # pip install AICSImage[czi]
 import javabridge, bioformats  # pip install javabridge, bioformats
 
-javabridge.start_vm(class_path=bioformats.JARS)
-
 
 def read_image(
     path_to_img: str, method: str = "czifile", highest_resolution: str = "20x"
@@ -68,7 +66,7 @@ def read_image(
         return {}
     elif method == "czifile":
         with CziFile(path_to_img) as czi:
-            return {"ScanRegion0": czi.asarray()}
+            return {"ScanRegion0": czi.asarray()[0, 0]}
     elif method == "aicsimageio":
         # read the highest resolution
         img = AICSImage(path_to_img)
@@ -81,6 +79,8 @@ def read_image(
             dict_imgs[scene] = img_data
         return dict_imgs
     elif method == "bioformats":
+        javabridge.start_vm(class_path=bioformats.JARS)
+
         omexml = bioformats.get_omexml_metadata(path_to_img)
         o = bioformats.OMEXML(omexml)
         # get image dimensions (and series)

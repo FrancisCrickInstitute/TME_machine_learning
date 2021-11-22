@@ -158,7 +158,8 @@ assert RAW_DATA_PATH and PROCESSED_DATA_PATH
 
 def run_tiling():
     print("===== TILING =====")
-    reading_method = "bioformats"
+    # reading_method = "bioformats"
+    reading_method = "aicsimageio"
 
     do_batch_processing = True
     if ".czi" in RAW_DATA_PATH:
@@ -214,7 +215,7 @@ def run_tiling():
                 img_type="",
                 save_path=output_directory_processed_raw_tiling_scan_region,
             )
-    if reading_method == "bioformatcs":
+    if reading_method == "bioformats":
         print("... javabridge killing vm")
         tiling.javabridge_kill_vm()
 
