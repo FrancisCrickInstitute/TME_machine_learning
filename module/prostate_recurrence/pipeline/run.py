@@ -26,15 +26,15 @@ module_path = os.path.abspath(os.path.join("../../../module/"))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from prostate_recurrence.image_processing import (
-    colour_deconvolution,
-    tiling,
-    validate_psr_image,
-)
-
-from prostate_recurrence.data_exploration import stitching
-
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline")
+parser.add_argument(
+    "--module_path",
+    dest="module_path",
+    action="store",
+    type=str,
+    default="../../../module/",
+    help="module path to pipeline functions.",
+)
 parser.add_argument(
     "--flag_run_tiling",
     dest="flag_run_tiling",
@@ -144,6 +144,18 @@ FLAG_RUN_TILING = args.flag_run_tiling
 FLAG_RUN_COLOUR_DECONVOLUTION = args.flag_run_colour_deconvolution
 FLAG_RUN_VALIDATE_PSR_IMAGE = args.flag_run_validate_psr_image
 FLAG_RUN_STITCHING = args.flag_run_stitching
+MODULE_PATH = args.module_path
+if MODULE_PATH not in sys.path:
+    sys.path.append(MODULE_PATH)
+
+from prostate_recurrence.image_processing import (
+    colour_deconvolution,
+    tiling,
+    validate_psr_image,
+)
+
+from prostate_recurrence.data_exploration import stitching
+
 
 assert RAW_DATA_PATH and PROCESSED_DATA_PATH
 
@@ -183,19 +195,22 @@ def run_tiling():
 
         for scan_region, img in dict_imgs.items():
             output_directory_processed_raw_tiling_scan_region = os.path.join(
-                output_directory_processed_raw_tiling,
-                scan_region
+                output_directory_processed_raw_tiling, scan_region
             )
-            os.makedirs(output_directory_processed_raw_tiling_scan_region, exist_ok=True)
+            os.makedirs(
+                output_directory_processed_raw_tiling_scan_region, exist_ok=True
+            )
 
-            (dict_img_tiles, nrow, ncol) = tiling.create_tiles(img[0, 0], size=TILE_SIZE)
+            (dict_img_tiles, nrow, ncol) = tiling.create_tiles(
+                img[0, 0], size=TILE_SIZE
+            )
             tiling.save_tiles(
                 dict_img_tiles=dict_img_tiles,
                 nrow=nrow,
                 ncol=ncol,
                 img_id="",
                 img_type="",
-                save_path=output_directory_processed_raw_tiling,
+                save_path=output_directory_processed_raw_tiling_scan_region,
             )
 
 
