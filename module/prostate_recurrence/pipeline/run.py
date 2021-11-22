@@ -189,7 +189,7 @@ def run_tiling():
 
     for data_path in data_paths:
         now = datetime.now()
-        date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+        date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
         logstr += f"> processing: {data_path} at {date_time}\n"
 
         print(f"> processing: {data_path}")
@@ -231,17 +231,17 @@ def run_tiling():
             )
 
             now = datetime.now()
-            date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+            date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
             logstr += f"... scene : {scan_region} saved at {date_time}\n"
+
+        now = datetime.now()
+        date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+        logstr += f"{int(data_paths.index(data_path)+1)} data paths processed (total: {len(data_paths)}); finished at {date_time}\n"
         logstr += "\n"
-
-    now = datetime.now()
-    date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
-    logstr += f"all data paths processed; finished at {date_time}\n"
-
-    logfile = open(LOGFILE_PATH, "w")
-    logfile.write(logstr)
-    logfile.close()
+        logfile = open(LOGFILE_PATH, "a")
+        logfile.write(logstr)
+        logfile.close()
+        logstr = ""
 
     if reading_method == "bioformats":
         print("... javabridge killing vm")
