@@ -14,6 +14,7 @@
 import argparse
 import os
 import sys
+from datetime import datetime
 from glob import glob
 
 import numpy as np
@@ -30,6 +31,14 @@ parser.add_argument(
     type=str,
     default="../../../module/",
     help="module path to pipeline functions.",
+)
+parser.add_argument(
+    "--logfile_path",
+    dest="logfile_path",
+    action="store",
+    type=str,
+    default="./log_test.txt",
+    help="log file to record progress",
 )
 parser.add_argument(
     "--flag_run_tiling",
@@ -128,6 +137,7 @@ parser.add_argument(
     help="provide the number of pixels for tile size.",
 )
 args = parser.parse_args()
+LOGFILE_PATH = args.logfile_path
 RAW_DATA_PATH = args.raw_data_path
 RAW_DATA_TYPE = args.raw_data_type
 RAW_DATA_RES = args.raw_data_res
@@ -144,20 +154,21 @@ MODULE_PATH = args.module_path
 if MODULE_PATH not in sys.path:
     sys.path.append(MODULE_PATH)
 
+from prostate_recurrence.data_exploration import stitching
 from prostate_recurrence.image_processing import (
     colour_deconvolution,
     tiling,
     validate_psr_image,
 )
 
-from prostate_recurrence.data_exploration import stitching
-
-
 assert RAW_DATA_PATH and PROCESSED_DATA_PATH
 
 
 def run_tiling():
     print("===== TILING =====")
+
+    logstr = "===== TILING =====\n"
+
     # reading_method = "bioformats"
     reading_method = "aicsimageio"
 
@@ -177,6 +188,10 @@ def run_tiling():
         data_paths = [RAW_DATA_PATH]
 
     for data_path in data_paths:
+        now = datetime.now()
+        date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+        logstr += f"> processing: {data_path} at {date_time}\n"
+
         print(f"> processing: {data_path}")
         data_id = "_".join(data_path.split("/")[-1].split("_")[:2])
         output_directory_processed_raw_tiling = os.path.join(
@@ -203,7 +218,6 @@ def run_tiling():
                 output_directory_processed_raw_tiling_scan_region, exist_ok=True
             )
             (dict_img_tiles, nrow, ncol) = tiling.create_tiles(
-                # img[0, 0], size=TILE_SIZE
                 img,
                 size=TILE_SIZE,
             )
@@ -215,6 +229,20 @@ def run_tiling():
                 img_type="",
                 save_path=output_directory_processed_raw_tiling_scan_region,
             )
+
+            now = datetime.now()
+            date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+            logstr += f"... scene : {scan_region} saved at {date_time}\n"
+        logstr += "\n"
+
+    now = datetime.now()
+    date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+    logstr += f"all data paths processed; finished at {date_time}\n"
+
+    logfile = open(LOGFILE_PATH, "w")
+    logfile.write(logstr)
+    logfile.close()
+
     if reading_method == "bioformats":
         print("... javabridge killing vm")
         tiling.javabridge_kill_vm()
