@@ -22,10 +22,6 @@ from natsort import natsorted
 from PIL import Image
 from tqdm import tqdm
 
-module_path = os.path.abspath(os.path.join("../../../module/"))
-if module_path not in sys.path:
-    sys.path.append(module_path)
-
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline")
 parser.add_argument(
     "--module_path",
@@ -180,6 +176,7 @@ def run_tiling():
         data_paths = [RAW_DATA_PATH]
 
     for data_path in data_paths:
+        print(f"> processing: {data_path}")
         data_id = "_".join(data_path.split("/")[-1].split("_")[:2])
         output_directory_processed_raw_tiling = os.path.join(
             PROCESSED_DATA_PATH,
@@ -204,13 +201,11 @@ def run_tiling():
             os.makedirs(
                 output_directory_processed_raw_tiling_scan_region, exist_ok=True
             )
-            print("... creating tiles")
             (dict_img_tiles, nrow, ncol) = tiling.create_tiles(
                 # img[0, 0], size=TILE_SIZE
                 img,
                 size=TILE_SIZE,
             )
-            print("... saving tiles tiles")
             tiling.save_tiles(
                 dict_img_tiles=dict_img_tiles,
                 nrow=nrow,
@@ -219,6 +214,9 @@ def run_tiling():
                 img_type="",
                 save_path=output_directory_processed_raw_tiling_scan_region,
             )
+    if reading_method == "bioformatcs":
+        print("... javabridge killing vm")
+        tiling.javabridge_kill_vm()
 
 
 def run_colour_deconvolution():

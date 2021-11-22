@@ -285,3 +285,7 @@ def save_tiles(
                         ),
                     )
                 )
+
+
+def javabridge_kill_vm():
+    javabridge.kill_vm()
