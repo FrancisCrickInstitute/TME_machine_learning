@@ -132,7 +132,9 @@ def read_image(
             reader_this = bioformats.load_image(
                 path=path_to_img, series=image_id, rescale=True
             )
-            dict_imgs[f"ScanRegion{cnt}"] = reader_this
+            dict_imgs[f"ScanRegion{cnt}"] = (
+                reader_this / reader_this.max() * 255
+            ).astype(np.uint8)
             cnt += 1
         return dict_imgs
 
