@@ -116,6 +116,14 @@ parser.add_argument(
     help="options are PSR, HandE, or Both. currently only PSR is implemented.",
 )
 parser.add_argument(
+    "--raw_data_res",
+    dest="raw_data_res",
+    action="store",
+    type=str,
+    default="20x",
+    help="By default, 20x.",
+)
+parser.add_argument(
     "--tile_size",
     dest="tile_size",
     action="store",
@@ -126,6 +134,7 @@ parser.add_argument(
 args = parser.parse_args()
 RAW_DATA_PATH = args.raw_data_path
 RAW_DATA_TYPE = args.raw_data_type
+RAW_DATA_RES = args.raw_data_res
 PROCESSED_DATA_PATH = args.processed_data_path
 FEATURES_PATH = args.features_path
 TILE_SIZE = args.tile_size
@@ -146,7 +155,9 @@ def run_tiling():
         do_batch_processing = False
 
     if do_batch_processing:
-        data_paths = natsorted(glob(os.path.join(RAW_DATA_PATH, "*.czi")))
+        data_paths = natsorted(
+            glob(os.path.join(RAW_DATA_PATH, f"*{RAW_DATA_TYPE}.czi"))
+        )
         data_paths = data_paths[
             BATCH_SIZE * BATCH_ID : min(BATCH_SIZE * (BATCH_ID + 1), len(data_paths))
         ]
@@ -166,16 +177,26 @@ def run_tiling():
         )
         os.makedirs(output_directory_processed_raw_tiling, exist_ok=True)
 
-        img = tiling.read_image(data_path)
-        (dict_img_tiles, nrow, ncol) = tiling.create_tiles(img[0, 0], size=TILE_SIZE)
-        tiling.save_tiles(
-            dict_img_tiles=dict_img_tiles,
-            nrow=nrow,
-            ncol=ncol,
-            img_id="",
-            img_type="",
-            save_path=output_directory_processed_raw_tiling,
+        dict_imgs = tiling.read_image(
+            data_path, method="bioformats", highest_resolution=RAW_DATA_RES
         )
+
+        for scan_region, img in dict_imgs.items():
+            output_directory_processed_raw_tiling_scan_region = os.path.join(
+                output_directory_processed_raw_tiling,
+                scan_region
+            )
+            os.makedirs(output_directory_processed_raw_tiling_scan_region, exist_ok=True)
+
+            (dict_img_tiles, nrow, ncol) = tiling.create_tiles(img[0, 0], size=TILE_SIZE)
+            tiling.save_tiles(
+                dict_img_tiles=dict_img_tiles,
+                nrow=nrow,
+                ncol=ncol,
+                img_id="",
+                img_type="",
+                save_path=output_directory_processed_raw_tiling,
+            )
 
 
 def run_colour_deconvolution():

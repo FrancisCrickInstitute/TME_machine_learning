@@ -31,9 +31,14 @@ from typing import Dict, Tuple
 import numpy as np
 from czifile import CziFile  # pip install czifile
 from PIL import Image
+import javabridge, bioformats  # pip install javabridge, bioformats
+
+javabridge.start_vm(class_path=bioformats.JARS)
 
 
-def read_image(path_to_img: str, method: str = "czifile") -> np.array:
+def read_image(
+    path_to_img: str, method: str = "czifile", highest_resolution: str = "20x"
+) -> Dict[str, np.ndarray]:
     """read .czi image into a numpy array
     note: need implementation of alterative methods
     for reading .czi image
@@ -54,14 +59,69 @@ def read_image(path_to_img: str, method: str = "czifile") -> np.array:
         The whole slide image as Numpy array
     """
 
-    allowed_methods = ["czifile"]
+    allowed_methods = ["czifile", "bioformats"]
 
     if method not in allowed_methods:
         print(f"Please use one of the allowed methods : {allowed_methods}")
-        return None
+        return {}
     elif method == "czifile":
         with CziFile(path_to_img) as czi:
-            return czi.asarray()
+            return {"ScanRegion0": czi.asarray()}
+    elif method == "bioformats":
+        omexml = bioformats.get_omexml_metadata(path_to_img)
+        o = bioformats.OMEXML(omexml)
+        # get image dimensions (and series)
+        image_dims = []
+        for i in range(o.image_count):
+            image_dim = (
+                o.image(i).Pixels.get_SizeX(),
+                o.image(i).Pixels.get_SizeY(),
+            )
+            # print(image_dim)
+            image_dims.append(image_dim)
+        df_image_dims = pd.DataFrame(
+            columns=["scene_dim_x", "scene_dim_y"], data=image_dims
+        )
+        all_Xs = df_image_dims.scene_dim_x.values
+        all_Ys = df_image_dims.scene_dim_y.values
+        res = int(highest_resolution.split("x")[0])
+        resolutions = [highest_resolution]
+        for j, Xi, Xj, Xk, Yi, Yj, Yk in zip(
+            np.arange(all_Xs[1:].size),
+            all_Xs[:-1],
+            all_Xs[1:],
+            all_Xs[2:],
+            all_Ys[:-1],
+            all_Ys[1:],
+            all_Ys[2:],
+        ):
+            if Xi // Xj == 2:
+                res /= 2
+                res_str = f"{res}x"
+            else:
+                if Xj // Xk == 2:
+                    res = int(highest_resolution.split("x")[0])
+                    res_str = highest_resolution
+                else:
+                    break
+            resolutions.append(res_str)
+        # keep only rows reflecting data
+        df_image_dims_keep = df_image_dims.copy().iloc[: len(resolutions)]
+        df_image_dims_keep["Res"] = resolutions
+        df_image_dims_keep_largest_tiff = df_image_dims_keep.loc[
+            df_image_dims_keep.Res == resolutions[0]
+        ]
+
+        # read images
+        dict_imgs = {}
+        cnt = 0
+        for image_id in df_image_dims_keep_largest_tiff.index:
+            reader_this = bioformats.load_image(
+                path=path_to_img, series=image_id, rescale=True
+            )
+            dict_imgs[f"ScanRegion{cnt}"] = reader_this
+            cnt += 1
+        return dict_imgs
 
 
 def create_tiles(
@@ -155,14 +215,14 @@ def save_tiles(
             tile_id = irow * ncol + icol
             img_tile = dict_img_tiles[tile_id]
 
-            #if irow == 10 and icol == 10:
+            # if irow == 10 and icol == 10:
             #    print(np.sum(img_tile > 200))
 
             # if x% of values are near 255 (white space) or near 0, continue
-            #if (
+            # if (
             #    np.sum(img_tile > 200) / size ** 2 / 3
             #    + np.sum(img_tile < 30) / size ** 2 / 3
-            #) > 0.95:
+            # ) > 0.95:
             #    continue
 
             # save image tile
