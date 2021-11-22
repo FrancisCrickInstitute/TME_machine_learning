@@ -162,6 +162,8 @@ assert RAW_DATA_PATH and PROCESSED_DATA_PATH
 
 def run_tiling():
     print("===== TILING =====")
+    reading_method = "bioformats"
+
     do_batch_processing = True
     if ".czi" in RAW_DATA_PATH:
         do_batch_processing = False
@@ -190,20 +192,25 @@ def run_tiling():
         os.makedirs(output_directory_processed_raw_tiling, exist_ok=True)
 
         dict_imgs = tiling.read_image(
-            data_path, method="bioformats", highest_resolution=RAW_DATA_RES
+            data_path, method=reading_method, highest_resolution=RAW_DATA_RES
         )
+        print(f"scenes of this slide: {dict_imgs}")
 
         for scan_region, img in dict_imgs.items():
+            print(f"> processing scene: {scan_region}")
             output_directory_processed_raw_tiling_scan_region = os.path.join(
                 output_directory_processed_raw_tiling, scan_region
             )
             os.makedirs(
                 output_directory_processed_raw_tiling_scan_region, exist_ok=True
             )
-
+            print("... creating tiles")
             (dict_img_tiles, nrow, ncol) = tiling.create_tiles(
-                img[0, 0], size=TILE_SIZE
+                # img[0, 0], size=TILE_SIZE
+                img,
+                size=TILE_SIZE,
             )
+            print("... saving tiles tiles")
             tiling.save_tiles(
                 dict_img_tiles=dict_img_tiles,
                 nrow=nrow,
