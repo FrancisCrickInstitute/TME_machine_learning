@@ -40,10 +40,28 @@ parser.add_argument(
     default="PSR",
     help="options are PSR, HandE, or Both. currently only PSR is implemented.",
 )
+parser.add_argument(
+    "--raw_data_res",
+    dest="raw_data_res",
+    action="store",
+    type=str,
+    default="20x",
+    help="options are 20x, 10x. By default it's 20x",
+)
+parser.add_argument(
+    "--mask_res",
+    dest="mask_res",
+    action="store",
+    type=str,
+    default="2.5x",
+    help="By default it's 2.5x",
+)
 
 args = parser.parse_args()
 RAW_DATA_PATH = args.raw_data_path
 RAW_DATA_TYPE = args.raw_data_type
+RAW_DATA_RES = args.raw_data_res
+MASK_RES = args.mask_res
 PROCESSED_DATA_PATH = args.processed_data_path
 # module_path = os.path.abspath(os.path.join("../../../module/"))
 MODULE_PATH = args.module_path
@@ -53,8 +71,10 @@ if MODULE_PATH not in sys.path:
 from prostate_recurrence.image_processing import tissue_mask
 
 if __name__ == "__main__":
-    #MASK_RES = '5x'; MASK_RES_0 = '5.0x'
-    MASK_RES = '2.5x'; MASK_RES_0 = '2.5x'
+    MASK_RES_0 = MASK_RES
+    if MASK_RES == '5x':
+        MASK_RES_0 = '5.0x'
+        
     all_paths_to_data = natsorted(glob(
         os.path.join(
             RAW_DATA_PATH,
@@ -73,7 +93,7 @@ if __name__ == "__main__":
         dict_imgs_with_res = tissue_mask.read_image(
             path_to_img=path,
             method='bioformats',
-            highest_resolution='10x',
+            highest_resolution=RAW_DATA_RES,
             resolution=MASK_RES
         )
         dict_masks = tissue_mask.create_tissue_mask(
