@@ -250,12 +250,16 @@ def run_tiling():
 
 def run_colour_deconvolution():
     print("===== COLOUR DECONVOLUTION =====")
+    logstr = "===== TILING =====\n"
+
     do_batch_processing = True
     if ".czi" in RAW_DATA_PATH:
         do_batch_processing = False
 
     if do_batch_processing:
-        data_paths = natsorted(glob(os.path.join(RAW_DATA_PATH, "*.czi")))
+        data_paths = natsorted(
+            glob(os.path.join(RAW_DATA_PATH, f"*{RAW_DATA_TYPE}.czi"))
+        )
         data_paths = data_paths[
             BATCH_SIZE * BATCH_ID : min(BATCH_SIZE * (BATCH_ID + 1), len(data_paths))
         ]
@@ -264,6 +268,9 @@ def run_colour_deconvolution():
         data_paths = [RAW_DATA_PATH]
 
     for data_path in data_paths:
+        now = datetime.now()
+        date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+        logstr += f"> processing: {data_path} at {date_time}\n"
         data_id = "_".join(data_path.split("/")[-1].split("_")[:2])
         output_directory_processed_raw_tiling = os.path.join(
             PROCESSED_DATA_PATH,
@@ -285,20 +292,63 @@ def run_colour_deconvolution():
         )
         os.makedirs(output_directory_processed_deconvolutions, exist_ok=True)
 
-        image_tile_paths = glob(
-            os.path.join(output_directory_processed_raw_tiling, "*.tif")
+        output_directory_processed_raw_tiling_scan_region_paths = natsorted(
+            glob(os.path.join(output_directory_processed_raw_tiling, "ScanRegion*"))
         )
-        for image_tile_path in image_tile_paths:
-            img_arr = np.array(Image.open(image_tile_path))
-            image_deconvolved, stains = colour_deconvolution.deconvolve_image(img_arr)
-            cmap_psr = colour_deconvolution.create_cmap()
-            colour_deconvolution.save_deconvolved_images(
-                image_deconvolved=image_deconvolved,
-                image_path=image_tile_path,
-                output_directory=output_directory_processed_deconvolutions,
-                stains=stains,
-                cmap_psr=cmap_psr,
+
+        for (
+            output_directory_processed_raw_tiling_scan_region_path
+        ) in output_directory_processed_raw_tiling_scan_region_paths:
+            scan_region = os.path.basename(
+                output_directory_processed_raw_tiling_scan_region_path
             )
+            print(f"> processing scene: {scan_region}")
+
+            output_directory_processed_deconvolutions_scan_region_path = os.path.join(
+                output_directory_processed_deconvolutions, scan_region
+            )
+            os.makedirs(
+                output_directory_processed_deconvolutions_scan_region_path,
+                exist_ok=True,
+            )
+            os.chmod(
+                output_directory_processed_deconvolutions_scan_region_path, mode=0o777
+            )
+
+            image_tile_paths = natsorted(
+                glob(
+                    os.path.join(
+                        output_directory_processed_raw_tiling_scan_region_path,
+                        "image_tile*.tif",
+                    )
+                )
+            )
+            for image_tile_path in image_tile_paths:
+                img_arr = np.array(Image.open(image_tile_path))
+                image_deconvolved, stains = colour_deconvolution.deconvolve_image(
+                    img_arr
+                )
+                cmap_psr = colour_deconvolution.create_cmap()
+                colour_deconvolution.save_deconvolved_images(
+                    image_deconvolved=image_deconvolved,
+                    image_path=image_tile_path,
+                    output_directory=output_directory_processed_deconvolutions_scan_region_path,
+                    stains=stains,
+                    cmap_psr=cmap_psr,
+                )
+
+            now = datetime.now()
+            date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+            logstr += f"... scene : {scan_region} saved at {date_time}\n"
+
+        now = datetime.now()
+        date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+        logstr += f"{int(data_paths.index(data_path)+1)} data paths processed (total: {len(data_paths)}); finished at {date_time}\n"
+        logstr += "\n"
+        logfile = open(LOGFILE_PATH, "a")
+        logfile.write(logstr)
+        logfile.close()
+        logstr = ""
 
 
 def run_validate_psr_image():
