@@ -250,7 +250,7 @@ def run_tiling():
 
 def run_colour_deconvolution():
     print("===== COLOUR DECONVOLUTION =====")
-    logstr = "===== TILING =====\n"
+    logstr = "===== COLOUR DECONVOLUTION =====\n"
 
     do_batch_processing = True
     if ".czi" in RAW_DATA_PATH:
@@ -353,6 +353,7 @@ def run_colour_deconvolution():
 
 def run_validate_psr_image():
     print("===== VALIDATE PSR IMAGE =====")
+    logstr = "===== VALIDATE PSR IMAGE =====\n"
     do_batch_processing = True
     if ".czi" in RAW_DATA_PATH:
         do_batch_processing = False
@@ -367,55 +368,97 @@ def run_validate_psr_image():
         data_paths = [RAW_DATA_PATH]
 
     for data_path in data_paths:
+        now = datetime.now()
+        date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+        logstr += f"> processing: {data_path} at {date_time}\n"
         data_id = "_".join(data_path.split("/")[-1].split("_")[:2])
-        output_directory_processed_deconvolutions_psr = os.path.join(
+
+        output_directory_processed_deconvolutions = os.path.join(
             PROCESSED_DATA_PATH,
             data_id,
             f"tile_size_{TILE_SIZE}",
             "whole_slide",
             RAW_DATA_TYPE,
             "deconvolutions",
-            "psr",
-            "inverted_grayscale",
         )
-        assert os.path.exists(output_directory_processed_deconvolutions_psr)
+        assert os.path.exists(output_directory_processed_deconvolutions)
 
-        output_directory_summary = os.path.join(
-            output_directory_processed_deconvolutions_psr, "valid_psr_images_summary/"
+        output_directory_processed_deconvolutions_scan_region_paths = natsorted(
+            glob(os.path.join(output_directory_processed_deconvolutions, "ScanRegion*"))
         )
-        os.makedirs(output_directory_summary, exist_ok=True)
-        os.chmod(output_directory_summary, mode=0o777)
 
-        psr_image_tile_paths = glob(
-            os.path.join(output_directory_processed_deconvolutions_psr, "*psr.tif")
-        )
-        summary_columns = [
-            "path_to_image_tile",
-            "row",
-            "column",
-            "valid",
-            "fraction_with_min_intensity",
-        ]
-        summary_rows = []
-        for image_path in tqdm(psr_image_tile_paths):
-            image_arr = validate_psr_image.read_psr_image(image_path)
-            (
-                valid,
-                fraction_with_min_intensity,
-            ) = validate_psr_image.validate_psr_image(image_arr)
-            summary_rows.append(
-                (
-                    image_path,
-                    int(image_path.split("/")[-1].split("_")[2]),
-                    int(image_path.split("/")[-1].split("_")[3]),
-                    valid,
-                    fraction_with_min_intensity,
+        for (
+            output_directory_processed_deconvolutions_scan_region_path
+        ) in output_directory_processed_deconvolutions_scan_region_paths:
+            scan_region = os.path.basename(
+                output_directory_processed_deconvolutions_scan_region_path
+            )
+            print(f"> processing scene: {scan_region}")
+
+            output_directory_processed_deconvolutions_scan_region_psr = os.path.join(
+                output_directory_processed_deconvolutions_scan_region_path,
+                "psr",
+                "inverted_grayscale",
+            )
+            assert os.path.exists(
+                output_directory_processed_deconvolutions_scan_region_psr
+            )
+
+            output_directory_summary = os.path.join(
+                output_directory_processed_deconvolutions_scan_region_psr,
+                "valid_psr_images_summary/",
+            )
+            os.makedirs(output_directory_summary, exist_ok=True)
+            os.chmod(output_directory_summary, mode=0o777)
+
+            psr_image_tile_paths = natsorted(
+                glob(
+                    os.path.join(
+                        output_directory_processed_deconvolutions_scan_region_psr,
+                        "*psr.tif",
+                    )
                 )
             )
-        df_summary = pd.DataFrame(data=summary_rows, columns=summary_columns)
-        validate_psr_image.write_validation_summary(
-            summary=df_summary, output_directory=output_directory_summary
-        )
+            summary_columns = [
+                "path_to_image_tile",
+                "row",
+                "column",
+                "valid",
+                "fraction_with_min_intensity",
+            ]
+            summary_rows = []
+            for image_path in tqdm(psr_image_tile_paths):
+                image_arr = validate_psr_image.read_psr_image(image_path)
+                (
+                    valid,
+                    fraction_with_min_intensity,
+                ) = validate_psr_image.validate_psr_image(image_arr)
+                summary_rows.append(
+                    (
+                        image_path,
+                        int(image_path.split("/")[-1].split("_")[2]),
+                        int(image_path.split("/")[-1].split("_")[3]),
+                        valid,
+                        fraction_with_min_intensity,
+                    )
+                )
+            df_summary = pd.DataFrame(data=summary_rows, columns=summary_columns)
+            validate_psr_image.write_validation_summary(
+                summary=df_summary, output_directory=output_directory_summary
+            )
+
+            now = datetime.now()
+            date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+            logstr += f"... scene : {scan_region} saved at {date_time}\n"
+
+        now = datetime.now()
+        date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+        logstr += f"{int(data_paths.index(data_path)+1)} data paths processed (total: {len(data_paths)}); finished at {date_time}\n"
+        logstr += "\n"
+        logfile = open(LOGFILE_PATH, "a")
+        logfile.write(logstr)
+        logfile.close()
+        logstr = ""
 
 
 # def run_feature_engineering():
