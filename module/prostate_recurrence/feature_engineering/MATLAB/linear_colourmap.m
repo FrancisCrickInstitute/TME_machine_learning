@@ -7,7 +7,8 @@ function linear_colourmap(...
     include_colourbar,...
     colourbar_name,...
     max_input,...
-    min_input...
+    min_input,...
+    tissue_mask...
     )
 
 %LINEAR_COLOURMAP Saves linear input matrix using user defined colormap
@@ -27,14 +28,16 @@ function linear_colourmap(...
 %   colourbar_name: name of file name for colourbar output.
 %   max_input: Maximum value - values beyond this are saturated.
 %   min_input: Minimum value - values beyond this are saturated.
-%
+%   tissue_mask: Values beyond the tissue mask are set to 0 (i.e. black on
+%   the output colourmap.
 %
 %   Class support for inputs: directory, file_name, colourmap, file_type:
 %      string
 %   Class support for inputs input_matrix, include_colourbar, max_input and 
 %   min_input:
 %      float: single, double, int: uint8, uint16, uint64
-%   
+%   Class support for tissue_mask:
+%       logical
 %
 %   This work is licensed under a Creative Commons Attribution 4.0 
 %   International License.
@@ -55,6 +58,8 @@ linear_index = round(...
     255*(input_matrix-min_input)./(max_input-min_input)...
     )+1;
 rgb_image = ind2rgb(linear_index, cm);
+tissue_mask = repmat(tissue_mask,[1,1,3]);
+rgb_image(~tissue_mask) = 0;
 
 if file_type(1) ~= '.'
     file_type=['.' file_type];

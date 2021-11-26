@@ -3,7 +3,8 @@ function periodic_colourmap(...
     file_name,...
     file_type,...
     periodic_matrix,...
-    include_colourbar...
+    include_colourbar,...
+    tissue_mask...
     )
 %PERIODIC_COLOURMAP Saves periodic input matrix using hsv wraparound
 %colourmap
@@ -19,12 +20,16 @@ function periodic_colourmap(...
 %   file_type: Save image type (tif, jpeg etc.)
 %   periodic_matrix: The matrix of angles used to generate image output.
 %   include_colourbar: 1 for True, 0 for false.
+%   tissue_mask: Values beyond the tissue mask are set to 0 (i.e. black on
+%   the output colourmap.
 %
 %
 %   Class support for inputs directory, file_name, file_type:
 %      string
 %   Class support for inputs periodic_matrix and include_colourbar:
 %      float: single, double, int: uint8, uint16, uint64
+%   Class support for tissue_mask:
+%       logical
 %   
 %
 %   This work is licensed under a Creative Commons Attribution 4.0 
@@ -37,6 +42,8 @@ huemap = hsv2rgb(hmap);
 huemap=[huemap;[1,1,1]];
 periodic_index = round(255*(periodic_matrix-0)./pi)+1;
 rgb_image = ind2rgb(periodic_index, huemap);
+tissue_mask = repmat(tissue_mask,[1,1,3]);
+rgb_image(~tissue_mask) = 0;
 
 if file_type(1) ~= '.'
     file_type=['.' file_type];

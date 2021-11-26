@@ -3,7 +3,8 @@ function [output_image,output_length] = ...
     input_continuum,radius,...
     stats_function,...
     logical_boundary,...
-    type...
+    type,...
+    tissue_mask...
     )
 %STATISTICAL_FUNCTION_CONVOLUTION carries out convolutions of statistical
 %functions on continuum matrices.
@@ -78,7 +79,7 @@ function [output_image,output_length] = ...
 %   International License.
 
 [rows,cols]=size(input_continuum);
-
+input_continuum(~tissue_mask) = NaN;
 max_image_radius = floor(min(rows/2,cols/2))-1;
 radius=min(radius,max_image_radius);
 filtersize=2*radius+1;
@@ -131,19 +132,19 @@ end
 stats_function = lower(stats_function);
 switch stats_function
     case{'median'}
-        convolution_function = ['@(x) median(' input_vector ')'];
+        convolution_function = ['@(x) median(' input_vector ',''omitnan'')'];
     case{'mean'}
-        convolution_function = ['@(x) mean(' input_vector ')'];
+        convolution_function = ['@(x) mean(' input_vector ',''omitnan'')'];
     case{'sum'}
-        convolution_function = ['@(x) sum(' input_vector ')'];
+        convolution_function = ['@(x) sum(' input_vector ',''omitnan'')'];
     case{'var'}
-        convolution_function = ['@(x) var(' input_vector ')'];
+        convolution_function = ['@(x) var(' input_vector ',''omitnan'')'];
     case{'std'}
-        convolution_function = ['@(x) std(' input_vector ')'];
+        convolution_function = ['@(x) std(' input_vector ',''omitnan'')'];
     case{'min'}
-        convolution_function = ['@(x) min(' input_vector ')'];
+        convolution_function = ['@(x) min(' input_vector ',''omitnan'')'];
     case{'max'}
-        convolution_function = ['@(x) max(' input_vector ')'];
+        convolution_function = ['@(x) max(' input_vector ',''omitnan'')'];
     case{'lower quartile'}
         convolution_function = ['@(x) prctile(' input_vector ',25)'];
     case{'upper quartile'}
