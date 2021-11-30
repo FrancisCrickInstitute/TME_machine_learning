@@ -359,7 +359,9 @@ def run_validate_psr_image():
         do_batch_processing = False
 
     if do_batch_processing:
-        data_paths = natsorted(glob(os.path.join(RAW_DATA_PATH, "*.czi")))
+        data_paths = natsorted(
+            glob(os.path.join(RAW_DATA_PATH, f"*{RAW_DATA_TYPE}.czi"))
+        )
         data_paths = data_paths[
             BATCH_SIZE * BATCH_ID : min(BATCH_SIZE * (BATCH_ID + 1), len(data_paths))
         ]
