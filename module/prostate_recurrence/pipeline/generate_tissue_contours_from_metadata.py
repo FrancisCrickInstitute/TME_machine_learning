@@ -75,6 +75,7 @@ if __name__ == "__main__":
         slide_id = "_".join(
             [os.path.basename(path).split("_")[0], os.path.basename(path).split("_")[1]]
         )
+        slide_id_CHHiP = os.path.basename(path).split("_")[0]
         contours_extracted = tissue_contour_from_metadata.extract_tissue_contour(
             path_to_img=path
         )
@@ -109,6 +110,8 @@ if __name__ == "__main__":
             path_to_save_dataframe=path_to_save_dataframe,
         )
 
+        df_contour_sizes["ID"] = slide_id
+        df_contour_sizes["ID_CHHiP"] = slide_id_CHHiP
         all_contour_size_information = all_contour_size_information.append(
             df_contour_sizes
         )
@@ -129,6 +132,28 @@ if __name__ == "__main__":
     all_contour_size_information.to_csv(
         os.path.join(
             directory_to_save_summary, "all_tissue_contour_size_information.csv"
+        ),
+        index=False,
+    )
+
+    all_contour_size_information_slide_total = (
+        all_contour_size_information.copy().groupby("ID_CHHiP", as_index=False)
+    ).sum()[["ID_CHHiP", "Area"]]
+    all_contour_size_information_slide_total.to_csv(
+        os.path.join(
+            directory_to_save_summary,
+            "all_tissue_contour_size_information_CHHiP_slide_all_blocks_total_area.csv",
+        ),
+        index=False,
+    )
+
+    all_contour_size_information_block_total = (
+        all_contour_size_information.copy().groupby("ID", as_index=False)
+    ).sum()[["ID", "Area"]]
+    all_contour_size_information_block_total.to_csv(
+        os.path.join(
+            directory_to_save_summary,
+            "all_tissue_contour_size_information_CHHiP_slide_per_block_total_area.csv",
         ),
         index=False,
     )
