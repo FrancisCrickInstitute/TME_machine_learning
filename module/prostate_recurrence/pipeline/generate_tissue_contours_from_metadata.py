@@ -1,11 +1,11 @@
 import argparse
 import os
 import sys
+from datetime import datetime
 from glob import glob
 
 import pandas as pd
 from natsort import natsorted
-
 
 parser = argparse.ArgumentParser(prog="tme-ml-raw-data-tissue-contour")
 parser.add_argument(
@@ -15,6 +15,14 @@ parser.add_argument(
     type=str,
     default="../../../module/",
     help="module path to pipeline functions.",
+)
+parser.add_argument(
+    "--logfile_path",
+    dest="logfile_path",
+    action="store",
+    type=str,
+    default="./log_test.txt",
+    help="log file to record progress",
 )
 parser.add_argument(
     "--raw_data_path",
@@ -42,6 +50,7 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
+LOGFILE_PATH = args.logfile_path
 RAW_DATA_PATH = args.raw_data_path
 RAW_DATA_TYPE = args.raw_data_type
 PROCESSED_DATA_PATH = args.processed_data_path
@@ -57,7 +66,11 @@ if __name__ == "__main__":
         glob(os.path.join(RAW_DATA_PATH, f"*{RAW_DATA_TYPE}.czi"))
     )
     all_contour_size_information = pd.DataFrame()
+    logstr = "===== TISSUE CONTOUR EXTRACTION =====\n"
     for path in all_paths_to_data:
+        now = datetime.now()
+        date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+        logstr += f"> processing: {path} at {date_time}\n"
         print(f"> processing path : {path}")
         slide_id = "_".join(
             [os.path.basename(path).split("_")[0], os.path.basename(path).split("_")[1]]
@@ -99,6 +112,15 @@ if __name__ == "__main__":
         all_contour_size_information = all_contour_size_information.append(
             df_contour_sizes
         )
+
+        now = datetime.now()
+        date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+        logstr += f"{int(all_paths_to_data.index(path)+1)} data paths processed (total: {len(all_paths_to_data)}); finished at {date_time}\n"
+        logstr += "\n"
+        logfile = open(LOGFILE_PATH, "a")
+        logfile.write(logstr)
+        logfile.close()
+        logstr = ""
 
     directory_to_save_summary = os.path.join(
         RAW_DATA_PATH, "summary_of_tissue_contours_from_metadata"
