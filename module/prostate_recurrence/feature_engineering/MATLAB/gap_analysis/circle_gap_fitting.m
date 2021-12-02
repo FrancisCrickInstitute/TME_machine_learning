@@ -74,8 +74,11 @@ while isempty(radius_vector)==0
     [row_mid,col_mid] = ...
         ind2sub(padded_size,radius_index_vector(random_circle_index));
     [cols rows] = meshgrid(1:icols, 1:irows);
-   
-    radius = radius_vector(random_circle_index)-1;
+    
+    
+    
+    circle_radius_float = radius_vector(random_circle_index);
+    radius = circle_radius_float-1;
     upper_radius = ceil(radius);
     lower_radius = floor(radius);
     
@@ -98,10 +101,10 @@ while isempty(radius_vector)==0
     bw_analyse(circlePixels)=1;
     centroid_row(counter)=row_mid;
     centroid_col(counter)=col_mid;
-    circle_radius(counter)=radius;
+    circle_radius(counter)=radius+0.5; %Added 0.5 to account for a single pixel having radius 0.5
     %Should we take the discrete or continuous version of this?
     label_matrix(circlePixels) = counter;
-    radius_label_matrix(circlePixels) = radius;
+    radius_label_matrix(circlePixels) = radius + 0.5;
     [...
     irows,...
     icols,...
@@ -117,6 +120,7 @@ end
 
 %Output data updated to account for original padding.
 label_matrix=label_matrix(2:row_size+1,2:col_size+1);
+radius_label_matrix=radius_label_matrix(2:row_size+1,2:col_size+1);
 centroid_row=centroid_row-1;
 centroid_col=centroid_col-1;
 

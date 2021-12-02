@@ -832,6 +832,131 @@ for image_I=image_start:image_end
         ] = circle_gap_fitting(input_gap_matrix,0);
         ImName=[save_directory 'overlaid_gaps.tif']
         circle_gap_plotting(label_matrix,ImName);
+        
+        radii_vector = [5,10];
+        [...
+          area_weighted_sample,...
+          neighbours,...
+          variable_radius ...
+          ] = circle_gap_statistics(label_matrix,radius_label_matrix,centroid_row,centroid_col,circle_radius,input_gap_matrix,radii_vector)
+
+
+
+        output_stats = [output_stats,length(circle_radius)];
+        variable_names={variable_names{1:end},['Total circles']};
+        output_stats = [output_stats,mean(circle_radius),std(circle_radius),skewness(circle_radius),kurtosis(circle_radius)];
+        variable_names={variable_names{1:end},'Mean gap radius','Stan. dev. gap radius','Skewness gap radius','Kurtosis gap radius'};
+        percentiles=[0,1,5,10,25,50,75,90,95,99,100];
+        for I = 1:length(percentiles)
+            p = percentiles(I);
+            output_stats = [output_stats,prctile(circle_radius,p)];
+            variable_names={variable_names{1:end},['Gap size percentile ' num2str(p) ]};
+                 
+        end
+        h=figure;
+        histogram(circle_radius)
+        axis;
+        set(gca,'LineWidth',4.5)
+        set(gca,'FontSize',20);
+        xlabel('Gap size radius (pixels)','fontsize',24,'fontweight','b')
+        ylabel('Frequency','fontsize',24,'fontweight','b')
+        axis square;
+        save_filename=[save_directory 'histogram_gap_radius.tif']
+        saveas(h,save_filename)
+        close all
+
+
+        output_stats = [output_stats,mean(area_weighted_sample),std(area_weighted_sample),skewness(area_weighted_sample),kurtosis(area_weighted_sample)];
+        variable_names={variable_names{1:end},'Mean area weighted gap radius','Stan. dev. area weighted gap radius','Skewness area weighted gap radius','Kurtosis area weighted gap radius'};
+        for I = 1:length(percentiles)
+            p = percentiles(I);
+            output_stats = [output_stats,prctile(area_weighted_sample,p)];
+            variable_names={variable_names{1:end},['Area weighted gap size percentile ' num2str(p) ]};
+        end
+        h=figure;
+        histogram(area_weighted_sample)
+        axis;
+        set(gca,'LineWidth',4.5)
+        set(gca,'FontSize',20);
+        xlabel('Gap size radius (pixels)','fontsize',24,'fontweight','b')
+        ylabel('Area weighted frequency','fontsize',24,'fontweight','b')
+        axis square;
+        save_filename=[save_directory 'histogram_area_weighted_gap_radius.tif']
+        saveas(h,save_filename)
+        close all
+
+
+        output_stats = [output_stats,mean(neighbours(:),'omitnan'),std(neighbours(:),'omitnan'),skewness(neighbours(:)),kurtosis(neighbours(:))];
+        variable_names={variable_names{1:end},'Mean gap neighbour size','Stan. dev. gap neighbour size','Skewness gap neighbour size','Kurtosis gap neighbour size'};
+        h=figure;
+        histogram(neighbours(find(neighbours>=0)))
+        axis;
+        set(gca,'LineWidth',4.5)
+        set(gca,'FontSize',20);
+        xlabel('Neighbour gap size radius (pixels)','fontsize',24,'fontweight','b')
+        ylabel('Frequency','fontsize',24,'fontweight','b')
+        axis square;
+        save_filename=[save_directory 'histogram_neighbour_gap_size.tif']
+        saveas(h,save_filename)
+        close all
+        
+        for r=1:length(radii_vector)
+            output_stats = [output_stats,mean(variable_radius(r).centroid_distance),std(variable_radius(r).centroid_distance),skewness(variable_radius(r).centroid_distance),kurtosis(variable_radius(r).centroid_distance)];
+            variable_names={variable_names{1:end},['Mean centroid distance radius threshold ' num2str(radii_vector(r))],['Stan. dev. centroid distance radius threshold ' num2str(radii_vector(r))],['Skewness centroid distance radius threshold ' num2str(radii_vector(r))],['Kurtosis centroid distance radius threshold ' num2str(radii_vector(r))]};
+            
+            h=figure;
+            histogram(variable_radius(r).centroid_distance)
+            axis;
+            set(gca,'LineWidth',4.5)
+            set(gca,'FontSize',20);
+            xlabel('Centroid distance (pixels)','fontsize',24,'fontweight','b')
+            ylabel('Frequency','fontsize',24,'fontweight','b')
+            axis square;
+            save_filename=[save_directory 'histogram_gap_centroid_dis_radius' num2str(radii_vector(r)) '.tif']
+            saveas(h,save_filename)
+            close all
+        end
+        for r=1:length(radii_vector)
+            output_stats = [output_stats,mean(variable_radius(r).boundary_distance),std(variable_radius(r).boundary_distance),skewness(variable_radius(r).boundary_distance),kurtosis(variable_radius(r).boundary_distance)];
+            variable_names={variable_names{1:end},['Mean boundary distance radius threshold ' num2str(radii_vector(r))],['Stan. dev. boundary distance radius threshold ' num2str(radii_vector(r))],['Skewness boundary distance radius threshold ' num2str(radii_vector(r))],['Kurtosis boundary distance radius threshold ' num2str(radii_vector(r))]};
+            h=figure;
+            histogram(variable_radius(r).boundary_distance)
+            axis;
+            set(gca,'LineWidth',4.5)
+            set(gca,'FontSize',20);
+            xlabel('Boundary distance (pixels)','fontsize',24,'fontweight','b')
+            ylabel('Frequency','fontsize',24,'fontweight','b')
+            axis square;
+            save_filename=[save_directory 'histogram_gap_boundary_dis_radius' num2str(radii_vector(r)) '.tif']
+            saveas(h,save_filename)
+            close all
+        end
+        for I=1:width(inverted_bw_stats)
+            shape_stat = inverted_bw_stats.Variables;
+            shape_stat = shape_stat(:,I);
+            shape_stat(isinf(shape_stat))=[];
+            shape_stat(isnan(shape_stat))=[];
+            stat_string = inverted_bw_stats.Properties.VariableNames{I}
+            output_stats = [output_stats,mean(shape_stat),std(shape_stat),skewness(shape_stat),kurtosis(shape_stat)];
+            variable_names={variable_names{1:end},['Mean gap shape ' stat_string],['Skewness ' stat_string],['Stan. dev. ' stat_string],['Kurtosis ' stat_string]};
+
+            h=figure;
+            histogram(shape_stat)
+            axis;
+            set(gca,'LineWidth',4.5)
+            set(gca,'FontSize',20);
+            xlabel(['Gap shape ' stat_string],'fontsize',24,'fontweight','b')
+            ylabel('Frequency','fontsize',24,'fontweight','b')
+            axis square;
+            save_filename=[save_directory 'histogram_gap_shape_'  stat_string '.tif']
+            saveas(h,save_filename)
+            close all
+        end
+
+        shape_stat = inverted_bw_stats.Area;
+        stat_string = 'area'
+        output_stats = [output_stats,mean(shape_stat),std(shape_stat),skewness(shape_stat),kurtosis(shape_stat)];
+        variable_names={variable_names{1:end},['Mean gap shape ' stat_string],['Skewness gap shape' stat_string],['Stan. dev. gap shape' stat_string],['Kurtosis gap shape' stat_string]};
 
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
