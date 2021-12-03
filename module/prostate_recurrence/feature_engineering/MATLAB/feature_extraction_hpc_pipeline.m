@@ -815,6 +815,55 @@ for image_I=image_start:image_end
     
         end
 
+        %Fractal dimension
+        fractal_range=[1,4,16,64,256];
+        [n,r] = boxcount(input_gap_matrix,'slope');
+        x=log(r);
+        y=log(n);
+        dy=-gradient(y)./gradient(x);
+        mdl = fitlm(r(1:end),dy(1:end),'constant','RobustOpts','on')
+        coeffs = mdl.Coefficients.Estimate;
+        variable_names={variable_names{1:end},['fractal dimension whole']};
+        output_stats = [output_stats,coeffs(1)];
+
+        h=figure;
+        loglog(r,n, 'k', 'lineWidth',3)
+        axis;
+        set(gca,'LineWidth',4.5)
+        set(gca,'FontSize',20);
+        xlabel('${\varepsilon}$, box size (pixels)','interpreter','latex','fontsize',24,'fontweight','b')
+        ylabel('${N(\varepsilon)}$, number of boxes','interpreter','latex','fontsize',24,'fontweight','b')
+        axis square;
+        save_filename=[save_directory 'fractal_loglog_plot.tif']
+        saveas(h,save_filename)
+        close all
+
+
+        h=figure;
+        semilogx(x, dy, 'k', 'lineWidth',3)
+        axis;
+        set(gca,'LineWidth',4.5)
+        set(gca,'FontSize',20);
+        xlabel('${\varepsilon}$, box size (pixels)','interpreter','latex','fontsize',24,'fontweight','b')
+        ylabel('${-d\ln(N(\varepsilon))/d\ln(\varepsilon)}$','interpreter','latex','fontsize',24,'fontweight','b')
+        axis square;
+        save_filename=[save_directory 'fractal_semilog_derivative_plot.tif']
+        saveas(h,save_filename)
+        close all
+        
+
+
+        for I=1:length(fractal_range)-1
+            lb=find(r==fractal_range(I));
+            ub=find(r==fractal_range(I+1));
+            mdl = fitlm(r(lb:ub),dy(lb:ub),'constant','RobustOpts','on')
+            coeffs = mdl.Coefficients.Estimate;
+            variable_names={variable_names{1:end},['fractal dimension range ' num2str(r(lb)) ' to ' num2str(r(ub))]};
+            output_stats = [output_stats,coeffs(1)];
+
+        end
+
+
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %Gap Analysis
