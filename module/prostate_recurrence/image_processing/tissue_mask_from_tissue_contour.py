@@ -24,7 +24,7 @@ def read_scene_arrays(
     directory_to_scenes: str, scene_image_name: str = "raw_PSR_2.5x.tif"
 ) -> Dict[str, np.ndarray]:
     scene_arrays = {}
-    subdirectory_to_scenes = natsorted(glob(directory_to_scenes + "*"))
+    subdirectory_to_scenes = natsorted(glob(os.path.join(directory_to_scenes, "*")))
     for subdirectory_to_scene in subdirectory_to_scenes:
         scene = os.path.basename(subdirectory_to_scene)
         path_to_scene_image = os.path.join(subdirectory_to_scene, scene_image_name)
@@ -39,7 +39,9 @@ def read_scene_mask_arrays(
     scene_mask_image_name: str = "contour_derived_mask_2.5x.tif",
 ):
     scene_mask_arrays = {}
-    subdirectory_to_scene_masks = natsorted(glob(directory_to_scene_masks + "*"))
+    subdirectory_to_scene_masks = natsorted(
+        glob(os.path.join(directory_to_scene_masks, "*"))
+    )
     for subdirectory_to_scene_mask in subdirectory_to_scene_masks:
         scene = os.path.basename(subdirectory_to_scene_mask)
         path_to_scene_mask_image = os.path.join(
@@ -250,5 +252,4 @@ def save_psr_mask(
             ),
             dpi=300,
         )
-        plt.show()
         plt.close()
