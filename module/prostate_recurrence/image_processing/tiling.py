@@ -26,14 +26,19 @@ This function saves output images using Image module from the PIL library.
 """
 
 import os
-import pandas as pd
+from glob import glob
 from typing import Dict, Tuple
 
+# import bioformats
+
+# import javabridge  # pip install javabridge, bioformats
 import numpy as np
-from czifile import CziFile  # pip install czifile
-from PIL import Image
+import pandas as pd
 from aicsimageio import AICSImage  # pip install AICSImage[czi]
-import javabridge, bioformats  # pip install javabridge, bioformats
+from czifile import CziFile  # pip install czifile
+from natsort import natsorted
+from PIL import Image
+from skimage import color
 
 
 def read_image(
@@ -78,65 +83,92 @@ def read_image(
             )  # returns 3D YXS numpy array
             dict_imgs[scene] = img_data
         return dict_imgs
-    elif method == "bioformats":
-        javabridge.start_vm(class_path=bioformats.JARS)
+    # elif method == "bioformats":
+    #     javabridge.start_vm(class_path=bioformats.JARS)
 
-        omexml = bioformats.get_omexml_metadata(path_to_img)
-        o = bioformats.OMEXML(omexml)
-        # get image dimensions (and series)
-        image_dims = []
-        for i in range(o.image_count):
-            image_dim = (
-                o.image(i).Pixels.get_SizeX(),
-                o.image(i).Pixels.get_SizeY(),
-            )
-            # print(image_dim)
-            image_dims.append(image_dim)
-        df_image_dims = pd.DataFrame(
-            columns=["scene_dim_x", "scene_dim_y"], data=image_dims
-        )
-        all_Xs = df_image_dims.scene_dim_x.values
-        all_Ys = df_image_dims.scene_dim_y.values
-        res = int(highest_resolution.split("x")[0])
-        resolutions = [highest_resolution]
-        for j, Xi, Xj, Xk, Yi, Yj, Yk in zip(
-            np.arange(all_Xs[1:].size),
-            all_Xs[:-1],
-            all_Xs[1:],
-            all_Xs[2:],
-            all_Ys[:-1],
-            all_Ys[1:],
-            all_Ys[2:],
-        ):
-            if Xi // Xj == 2:
-                res /= 2
-                res_str = f"{res}x"
-            else:
-                if Xj // Xk == 2:
-                    res = int(highest_resolution.split("x")[0])
-                    res_str = highest_resolution
-                else:
-                    break
-            resolutions.append(res_str)
-        # keep only rows reflecting data
-        df_image_dims_keep = df_image_dims.copy().iloc[: len(resolutions)]
-        df_image_dims_keep["Res"] = resolutions
-        df_image_dims_keep_largest_tiff = df_image_dims_keep.loc[
-            df_image_dims_keep.Res == resolutions[0]
-        ]
+    #     omexml = bioformats.get_omexml_metadata(path_to_img)
+    #     o = bioformats.OMEXML(omexml)
+    #     # get image dimensions (and series)
+    #     image_dims = []
+    #     for i in range(o.image_count):
+    #         image_dim = (
+    #             o.image(i).Pixels.get_SizeX(),
+    #             o.image(i).Pixels.get_SizeY(),
+    #         )
+    #         # print(image_dim)
+    #         image_dims.append(image_dim)
+    #     df_image_dims = pd.DataFrame(
+    #         columns=["scene_dim_x", "scene_dim_y"], data=image_dims
+    #     )
+    #     all_Xs = df_image_dims.scene_dim_x.values
+    #     all_Ys = df_image_dims.scene_dim_y.values
+    #     res = int(highest_resolution.split("x")[0])
+    #     resolutions = [highest_resolution]
+    #     for j, Xi, Xj, Xk, Yi, Yj, Yk in zip(
+    #         np.arange(all_Xs[1:].size),
+    #         all_Xs[:-1],
+    #         all_Xs[1:],
+    #         all_Xs[2:],
+    #         all_Ys[:-1],
+    #         all_Ys[1:],
+    #         all_Ys[2:],
+    #     ):
+    #         if Xi // Xj == 2:
+    #             res /= 2
+    #             res_str = f"{res}x"
+    #         else:
+    #             if Xj // Xk == 2:
+    #                 res = int(highest_resolution.split("x")[0])
+    #                 res_str = highest_resolution
+    #             else:
+    #                 break
+    #         resolutions.append(res_str)
+    #     # keep only rows reflecting data
+    #     df_image_dims_keep = df_image_dims.copy().iloc[: len(resolutions)]
+    #     df_image_dims_keep["Res"] = resolutions
+    #     df_image_dims_keep_largest_tiff = df_image_dims_keep.loc[
+    #         df_image_dims_keep.Res == resolutions[0]
+    #     ]
 
-        # read images
-        dict_imgs = {}
-        cnt = 0
-        for image_id in df_image_dims_keep_largest_tiff.index:
-            reader_this = bioformats.load_image(
-                path=path_to_img, series=image_id, rescale=True
-            )
-            dict_imgs[f"ScanRegion{cnt}"] = (
-                reader_this / reader_this.max() * 255
-            ).astype(np.uint8)
-            cnt += 1
-        return dict_imgs
+    #     # read images
+    #     dict_imgs = {}
+    #     cnt = 0
+    #     for image_id in df_image_dims_keep_largest_tiff.index:
+    #         reader_this = bioformats.load_image(
+    #             path=path_to_img, series=image_id, rescale=True
+    #         )
+    #         dict_imgs[f"ScanRegion{cnt}"] = (
+    #             reader_this / reader_this.max() * 255
+    #         ).astype(np.uint8)
+    #         cnt += 1
+    #     return dict_imgs
+
+
+def read_image_mask(
+    directory_to_image_mask: str,
+    image_mask_name: str,
+) -> Dict[str, np.ndarray]:
+    image_mask_arrays = {}
+    subdirectory_to_image_masks = natsorted(
+        glob(os.path.join(directory_to_image_mask, "*"))
+    )
+    for subdirectory_to_image_mask in subdirectory_to_image_masks:
+        scene = os.path.basename(subdirectory_to_image_mask)
+        path_to_image_mask = os.path.join(subdirectory_to_image_mask, image_mask_name)
+        image_mask_array = Image.open(path_to_image_mask)
+        image_mask_array = np.array(image_mask_array)
+
+        # convert to grayscale
+        if image_mask_array.ndim == 3:
+            if image_mask_array.shape[-1] == 4:
+                image_mask_array = np.uint8(
+                    color.rgb2gray(color.rgba2rgb(image_mask_array)) * 255
+                )
+            elif image_mask_array.shape[-1] == 3:
+                image_mask_array = np.uint8(color.rgb2gray(image_mask_array) * 255)
+
+        image_mask_arrays[scene] = image_mask_array
+    return image_mask_arrays
 
 
 def create_tiles(
@@ -176,11 +208,17 @@ def create_tiles(
         for icol in range(ncol):
             tile_id = irow * ncol + icol
 
-            img_tile = img[
-                irow * size : (irow + 1) * size,
-                icol * size : (icol + 1) * size,
-                :,
-            ]
+            if img.ndim == 3:
+                img_tile = img[
+                    irow * size : (irow + 1) * size,
+                    icol * size : (icol + 1) * size,
+                    :,
+                ]
+            elif img.ndim == 2:
+                img_tile = img[
+                    irow * size : (irow + 1) * size,
+                    icol * size : (icol + 1) * size,
+                ]
 
             dict_img_tiles[tile_id] = img_tile
 
@@ -229,19 +267,13 @@ def save_tiles(
         for icol in range(ncol):
             tile_id = irow * ncol + icol
             img_tile = dict_img_tiles[tile_id]
+            im = Image.fromarray(img_tile)
 
-            # if irow == 10 and icol == 10:
-            #    print(np.sum(img_tile > 200))
-
-            # if x% of values are near 255 (white space) or near 0, continue
-            # if (
-            #    np.sum(img_tile > 200) / size ** 2 / 3
-            #    + np.sum(img_tile < 30) / size ** 2 / 3
-            # ) > 0.95:
-            #    continue
+            # resize if needed
+            if img_tile.ndim == 2 and img_tile.shape[0] != size:
+                im = im.resize((size, size))
 
             # save image tile
-            im = Image.fromarray(img_tile)
             if img_id and img_type:
                 im.save(
                     os.path.join(
@@ -287,5 +319,5 @@ def save_tiles(
                 )
 
 
-def javabridge_kill_vm():
-    javabridge.kill_vm()
+# def javabridge_kill_vm():
+#     javabridge.kill_vm()
