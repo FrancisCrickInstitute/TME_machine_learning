@@ -89,6 +89,8 @@ def create_psr_mask(
         gray_image = color.rgb2gray(scene_array)
         gray_scene_mask = color.rgb2gray(color.rgba2rgb(scene_mask_array))
 
+        # print(scene, gray_image.shape, gray_scene_mask.shape) # the dimensions may not match. need debugging!
+
         # ... find out border gray levels => PSR mask
         nrow, ncol = gray_image.shape
         border_graylevels = []
@@ -104,9 +106,11 @@ def create_psr_mask(
         gray_image_copy[mask_half_max] = 0
 
         # ... clean the PSR mask using gray scene mask
-        gray_scene_mask_for_psr = gray_scene_mask > 0
+        # this is turned off for now, as the gray_scene_mask needs improving
+        # gray_scene_mask_for_psr = gray_scene_mask > 0
+        # gray_image_copy_copy = gray_image_copy.copy()
+        # gray_image_copy_copy[gray_scene_mask_for_psr] = 0
         gray_image_copy_copy = gray_image_copy.copy()
-        gray_image_copy_copy[gray_scene_mask_for_psr] = 0
 
         # ... minimum filter
         nonzero_pixels = gray_image_copy_copy > 0
