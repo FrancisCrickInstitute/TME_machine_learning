@@ -353,15 +353,16 @@ if __name__ == "__main__":
     else:
         job_batch_information = pd.read_csv(PATH_TO_JOB_BATCH_INFORMATION)
         batch_id = job_batch_information.batch_id.values[0]
-        paths_to_valid_image_tiles = job_batch_information.path_to_image.values
-        for path_to_valid_image_tile in paths_to_valid_image_tiles:
-            extract_texture_features_this_image(
-                path_to_valid_image_tile=path_to_valid_image_tile
-            )
+        paths_to_valid_image_tiles = job_batch_information.path_to_image_tile.values
 
         logstr = (
             f"===== EXTRACTION OF TEXTURE FEATURES (by batch : id = {batch_id}) =====\n"
         )
+
+        for path_to_valid_image_tile in paths_to_valid_image_tiles:
+            extract_texture_features_this_image(
+                path_to_valid_image_tile=path_to_valid_image_tile
+            )
 
         now = datetime.now()
         date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
