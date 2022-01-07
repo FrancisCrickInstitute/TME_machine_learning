@@ -96,11 +96,10 @@ RAW_DATA_PATH = args.raw_data_path
 RAW_DATA_TYPE = args.raw_data_type
 RAW_DATA_RES = args.raw_data_res
 PROCESSED_DATA_PATH = args.processed_data_path
-FEATURES_PATH = args.features_path
 TILE_SIZE = args.tile_size
 FLAG_INTENSITY_FEATURES = args.flag_intensity_features
 FLAG_GLCM_FEATURES = args.flag_glcm_features
-FLAG_PERCEPTION_FEATURES = args.flag_glcm_features
+FLAG_PERCEPTION_FEATURES = args.flag_perception_features
 
 MODULE_PATH = args.module_path
 if MODULE_PATH not in sys.path:
@@ -196,9 +195,7 @@ if __name__ == "__main__":
                     )
 
                     # read image
-                    image_array = glcm.read_image(
-                        path_to_image=path_to_valid_image_tile
-                    )
+                    image_array = glcm.read_image(path_to_img=path_to_valid_image_tile)
 
                     # texture - indensity
                     if FLAG_INTENSITY_FEATURES:
