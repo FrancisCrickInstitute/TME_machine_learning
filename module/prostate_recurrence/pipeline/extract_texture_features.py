@@ -51,7 +51,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--flag_perception_features",
-    dest="flag_perception_intensity",
+    dest="flag_perception_features",
     action="store",
     type=int,
     default=0,
