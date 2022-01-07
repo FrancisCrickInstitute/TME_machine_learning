@@ -77,7 +77,7 @@ parser.add_argument(
     "--job_batch_output_dir",
     dest="job_batch_output_dir",
     action="store",
-    type=int,
+    type=str,
     default=8,
     help="provide the directory for saving job batch files.",
 )
