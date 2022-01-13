@@ -38,15 +38,17 @@ results of UMAP embedding and other attributes.
 
 """
 
+import os
 from typing import Dict, List, Tuple
 
-import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+import plotly.express as px
+import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from sklearn.preprocessing import StandardScaler
 from umap import UMAP
 
 
@@ -565,3 +567,97 @@ def perform_umap(
         plt.close()
 
     return umap_attributes
+
+
+def plot_pca_feature_importance(
+    pca_components: np.ndarray,
+    feature_names: List[str],
+    output_directory: str,
+    n_components: int = 2,
+) -> None:
+    df_pca_components = pd.DataFrame(
+        data=pca_components[:n_components, :], columns=feature_names
+    )
+    df_pca_components_transposed = df_pca_components.T
+    df_pca_components_transposed.columns = [
+        f"PC{i}" for i in np.arange(1, n_components + 1)
+    ]
+
+    for component_i in np.arange(1, n_components + 1):
+        pc_name = f"PC{component_i}"
+        pc_abs_name = f"PC{component_i}_abs"
+
+        df_pca_components_transposed_i = df_pca_components_transposed.copy()[[pc_name]]
+
+        df_pca_components_transposed_i[pc_abs_name] = df_pca_components_transposed_i[
+            pc_name
+        ].abs()
+        df_pca_components_transposed_i_sorted = (
+            df_pca_components_transposed_i.sort_values(by=pc_abs_name, ascending=False)
+        )
+
+        plt.figure(figsize=(6, 4), dpi=300)
+        sns.heatmap(
+            df_pca_components_transposed_i_sorted.iloc[:20][[pc_name]],
+            annot=True,
+            cmap=plt.cm.bwr,
+            center=0,
+        )
+        plt.tight_layout()
+
+        plt.savefig(
+            os.path.join(
+                output_directory,
+                f"pca_features_ranked_{pc_name}.pdf",
+            ),
+            dpi=300,
+        )
+        plt.close()
+
+        df_pca_components_transposed_i_sorted.to_csv(
+            os.path.join(
+                output_directory,
+                f"pca_features_ranked_{pc_name}.csv",
+            )
+        )
+
+
+def interactive_plot_pca_embedding(
+    df_labels: pd.DataFrame,
+    embeddings: np.ndarray,
+    output_directory: str,
+    n_components: int = 2,
+    color_by_column: str = "slide",
+    hover_data_columns: List[str] = [],
+) -> None:
+    assert n_components in [2, 3]
+
+    df_plot = df_labels.copy()
+    for component_i in np.arange(1, n_components + 1):
+        pc_name = f"PC{component_i}"
+        df_plot[pc_name] = embeddings[:, component_i]
+
+    if n_components == 2:
+        fig = px.scatter(
+            df_plot,
+            x="PC1",
+            y="PC2",
+            color=color_by_column,
+            hover_data=hover_data_columns,
+        )
+    elif n_components == 3:
+        fig = px.scatter_3d(
+            df_plot,
+            x="PC1",
+            y="PC2",
+            z="PC3",
+            color=color_by_column,
+            hover_data=hover_data_columns,
+        )
+
+    fig.write_html(
+        os.path.join(
+            output_directory,
+            f"results_pca_plotly_interactive_{n_components}_components.html",
+        )
+    )
