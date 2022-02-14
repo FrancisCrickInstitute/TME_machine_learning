@@ -870,7 +870,7 @@ for image_I=image_start:image_end
         %Needs updating to include second mask
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
         
-        input_gap_matrix = fibre_matrix; 
+        input_gap_matrix = logical(image);
 
         [...
           label_matrix,...
@@ -882,7 +882,7 @@ for image_I=image_start:image_end
         ImName=[save_directory 'overlaid_gaps.tif']
         circle_gap_plotting(label_matrix,ImName);
         
-        radii_vector = [5,10];
+        radii_vector = [45,91,182,364];
         [...
           area_weighted_sample,...
           neighbours,...
