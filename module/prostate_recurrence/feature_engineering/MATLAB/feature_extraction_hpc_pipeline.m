@@ -871,6 +871,15 @@ for image_I=image_start:image_end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
         
         input_gap_matrix = logical(image);
+        L = bwlabel(input_gap_matrix,8);
+        keep_labels = unique(logical(fibre_matrix_zero).*L);
+        %keep_labels = keep_labels(keep_labels>0)
+        [C,ia] = setdiff(L,keep_labels,'sorted');
+        L_remove = ismember(L,C);
+        index_remove=find(L_remove);
+        L1=L;
+        L1(index_remove)=0;
+        input_gap_matrix = logical(L1);
 
         [...
           label_matrix,...
