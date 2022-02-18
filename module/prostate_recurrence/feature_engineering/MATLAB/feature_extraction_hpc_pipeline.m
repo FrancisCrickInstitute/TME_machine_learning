@@ -1,4 +1,4 @@
-function feature_extraction_hpc_pipeline(image_start,image_end,image_folder,function_folder,ctfire_function_folder,radius_range,tissue_mask)
+function feature_extraction_hpc_pipeline(image_start,image_end,image_folder,tissue_folder,function_folder,ctfire_function_folder,radius_range)
 addpath(genpath(function_folder))
 image_type = '.tif';
 analysis_mode = '1';
@@ -13,9 +13,15 @@ for image_I=image_start:image_end
     output_stats = [];
     image_file = input_image_list(image_I).name;
     image = imread([image_folder '/' image_file]);
+
+    [~, name, ext] = fileparts([image_folder image_file]);
+    tissue_name = name(1:end-4);
+    tissue_mask = imread([tissue_folder,tissue_name,ext]);
+    
+
     if sum(tissue_mask(:))/length(tissue_mask(:)) >= 0.005%Threshold to accept tile
         %Run CT-Fire
-        [~, name, ext] = fileparts([image_folder image_file]);
+        
         image_folder
         output_folder = [strrep(image_folder,'pre_processed_data','feature_engineering'),'tile_level_features/',name '/'];
         str1 = strfind(output_folder,'/');
