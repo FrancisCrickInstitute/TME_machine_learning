@@ -215,7 +215,7 @@ if __name__ == "__main__":
 
                     # multiple the above two
                     deconvolved_psr_tissue_masked_array = np.multiply(
-                        255 - tissue_mask_array / 255,
+                        (255 - tissue_mask_array / 255).astype(np.uint8),
                         deconvolved_psr_array,
                         dtype=np.uint8,
                     )
@@ -226,6 +226,19 @@ if __name__ == "__main__":
                     output_directory_processed_deconvolved_psr_tissue_masked_scan_region_image_path = output_directory_processed_deconvolved_psr_scan_region_image_path.replace(
                         "inverted_grayscale", "inverted_grayscale_tissue_masked"
                     )
+                    os.makedirs(
+                        os.path.dirname(
+                            output_directory_processed_deconvolved_psr_tissue_masked_scan_region_image_path
+                        ),
+                        exist_ok=True,
+                    )
+                    os.chmod(
+                        os.path.dirname(
+                            output_directory_processed_deconvolved_psr_tissue_masked_scan_region_image_path
+                        ),
+                        mode=0o777,
+                    )
+
                     deconvolved_psr_tissue_masked.save(
                         output_directory_processed_deconvolved_psr_tissue_masked_scan_region_image_path
                     )
