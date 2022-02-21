@@ -200,7 +200,8 @@ def extract_texture_features_this_image(path_to_valid_image_tile):
 
     # texture - glcm
     if FLAG_GLCM_FEATURES:
-        distances = [1, 10, 100]
+        # distances = [1, 10, 100]
+        distances = [1, 2, 5, 11, 22, 45, 90, 182, 364]
         angles = [0, np.pi / 4.0, np.pi / 2.0, np.pi * 3 / 4.0]
         symmetric = True
         normed = True
@@ -354,15 +355,38 @@ if __name__ == "__main__":
         job_batch_information = pd.read_csv(PATH_TO_JOB_BATCH_INFORMATION)
         batch_id = job_batch_information.batch_id.values[0]
         paths_to_valid_image_tiles = job_batch_information.path_to_image_tile.values
+        paths_to_valid_image_tiles = [
+            path.replace("inverted_grayscale", "inverted_grayscale_tissue_masked")
+            for path in job_batch_information.path_to_image_tile.values
+        ]
 
         logstr = (
             f"===== EXTRACTION OF TEXTURE FEATURES (by batch : id = {batch_id}) =====\n"
         )
+        now = datetime.now()
+        date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+        logstr += f"batch id = {batch_id}; started at {date_time}\n"
+        logstr += "\n"
+        logfile = open(LOGFILE_PATH, "a")
+        logfile.write(logstr)
+        logfile.close()
+        logstr = ""
 
         for path_to_valid_image_tile in paths_to_valid_image_tiles:
             extract_texture_features_this_image(
                 path_to_valid_image_tile=path_to_valid_image_tile
             )
+
+            now = datetime.now()
+            date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+            logstr += (
+                f"... image tile {path_to_valid_image_tile}; finished at {date_time}\n"
+            )
+            logstr += "\n"
+            logfile = open(LOGFILE_PATH, "a")
+            logfile.write(logstr)
+            logfile.close()
+            logstr = ""
 
         now = datetime.now()
         date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
