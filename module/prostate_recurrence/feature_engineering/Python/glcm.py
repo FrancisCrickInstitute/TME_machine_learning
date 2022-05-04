@@ -39,7 +39,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import LogNorm
 from PIL import Image
-from skimage.feature import greycomatrix, greycoprops
+from skimage.feature import graycomatrix, graycoprops
 
 
 def read_image(path_to_img: str) -> np.ndarray:
@@ -65,7 +65,8 @@ def read_image(path_to_img: str) -> np.ndarray:
 
 
 def construct_glcm(
-    image: np.array,
+    image: np.ndarray,
+    mask: np.ndarray,
     distances: List[int],
     angles: List[float],
     levels: int = 256,
@@ -79,8 +80,10 @@ def construct_glcm(
 
     Parameters
     ----------
-    image : np.array
+    image : np.ndarray
         An input gray scale image as numpy array
+    image_mask : np.ndarray
+        An binary image as numpy array
     distances : List[int]
         A list of pixel-pair offset distances
     angles : List[float]
@@ -101,8 +104,14 @@ def construct_glcm(
         i.e., P[i,j,d,theta].
     """
 
-    glcm = greycomatrix(
-        image=image,
+    masked_image = image.copy()
+    masked_image[masked_image == 0] = 1
+
+    if (mask == 0).any():
+        masked_image[~mask] = 0
+
+    glcm = graycomatrix(
+        image=masked_image,
         distances=distances,
         angles=angles,
         levels=levels,
@@ -110,7 +119,7 @@ def construct_glcm(
         normed=normed,
     )
 
-    return glcm
+    return glcm[1:, 1:, :, :]
 
 
 def extract_glcm_features(
@@ -159,7 +168,7 @@ def extract_glcm_features(
         ):
             print(f"feature {feature} has not been implemented yet. skip...")
             continue
-        glcm_features_output[feature] = greycoprops(matrix, feature)
+        glcm_features_output[feature] = graycoprops(matrix, feature)
 
     return glcm_features_output
 
@@ -170,6 +179,7 @@ def save_glcm_features(
     distances: List[int],
     angles: List[float],
     output_directory: str,
+    analysis_type: str = "masked",
 ) -> None:
     """save GLCM and quantitative features
     This function inputs the constructed GLCM and extracted quantitative features
@@ -198,9 +208,7 @@ def save_glcm_features(
         """
         for i, distance in enumerate(distances):
             for j, angle in enumerate(angles):
-                figure_name = (
-                    f"glcm_distance_{distance}_angle_{int(angle/np.pi*180)}.pdf"
-                )
+                figure_name = f"glcm_distance_{distance}_angle_{int(angle/np.pi*180)}_{analysis_type}.pdf"
                 fig = plt.figure(figsize=(4, 4), dpi=300)
                 ax = fig.add_axes([0.15, 0.15, 0.6, 0.6])
                 ax_cbar = fig.add_axes([0.8, 0.15, 0.05, 0.6])
@@ -224,7 +232,7 @@ def save_glcm_features(
         This function outputs GLCM as a numpy array, with distances and angles reflected
         in the 3rd and 4th dimension of the array, respectively.
         """
-        array_name = "glcm_array.npy"
+        array_name = f"glcm_array_{analysis_type}.npy"
         with open(os.path.join(output_directory, array_name), "wb") as fout:
             np.save(fout, matrix)
 
@@ -232,7 +240,7 @@ def save_glcm_features(
         """save GLCM quantitative features
         This function outputs GLCM quantitative features into a .csv file.
         """
-        file_name = "glcm_features.csv"
+        file_name = f"glcm_features_{analysis_type}.csv"
         columns = ["feature", "value"]
         data_rows = []
         for feature_name, feature_value in glcm_features_output.items():
