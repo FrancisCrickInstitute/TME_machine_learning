@@ -1,4 +1,5 @@
 import argparse
+from operator import ge
 import os
 import sys
 from datetime import datetime
@@ -132,13 +133,35 @@ from prostate_recurrence.feature_engineering.Python import (
 )
 
 
-def extract_texture_features_this_image(path_to_valid_image_tile):
+def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile):
+    path_splited = path_to_valid_image_tile.split("/")
+    slide_keyword_index = path_splited.index("slide_20X") + 1
+    scene_keyword_index = path_splited.index("deconvolutions") + 1
+    slide_id = path_splited[slide_keyword_index]
+    scene_id = path_splited[scene_keyword_index]
+    image_tile_name = os.path.basename(path_to_valid_image_tile).split("_psr.tif")[0]
+
+    path_to_corresponding_tissue_mask_tile = os.path.join(
+        "/".join(path_splited[:slide_keyword_index]),
+        slide_id,
+        f"tile_size_{TILE_SIZE}/whole_size/PSR",
+        "tissue_masks/tissue_mask",
+        scene_id,
+        f"{image_tile_name}.tif",
+    )
+
+    return path_to_corresponding_tissue_mask_tile
+
+
+def extract_texture_features_this_image(
+    path_to_valid_image_tile, path_to_corresponding_tissue_mask_tile
+):
 
     dirname_valid_image_tile = os.path.dirname(path_to_valid_image_tile)
     basename_valid_image_tile = os.path.basename(path_to_valid_image_tile)
     output_directory_processed_texture_features_this_image_tile = os.path.join(
         dirname_valid_image_tile.replace("pre_processed_data", "feature_engineering"),
-        "tile_level_features_texture",
+        "tile_level_features_texture_v2",
         basename_valid_image_tile.split(".")[0],
     )
     os.makedirs(
@@ -152,6 +175,14 @@ def extract_texture_features_this_image(path_to_valid_image_tile):
 
     # read image
     image_array = glcm.read_image(path_to_img=path_to_valid_image_tile)
+    tissue_mask_array = (
+        ~glcm.read_image(  # inversion as image_array in inverted grayscale
+            path_to_img=path_to_corresponding_tissue_mask_tile
+        )
+    )
+    tissue_mask_array_contrast = (
+        np.ones_like(tissue_mask_array) * tissue_mask_array.max()
+    ).astype(np.uint8)
 
     # texture - indensity
     if FLAG_INTENSITY_FEATURES:
@@ -206,33 +237,39 @@ def extract_texture_features_this_image(path_to_valid_image_tile):
         symmetric = True
         normed = True
 
-        matrix_glcm = glcm.construct_glcm(
-            image=image_array,
-            distances=distances,
-            angles=angles,
-            symmetric=symmetric,
-            normed=normed,
-        )
+        for analysis_type, tissue_mask in zip(
+            ["masked", "notmasked"], [tissue_mask_array, tissue_mask_array_contrast]
+        ):
 
-        glcm_features_output = glcm.extract_glcm_features(
-            matrix=matrix_glcm,
-            features=(
-                "contrast",
-                "dissimilarity",
-                "homogeneity",
-                "energy",
-                "correlation",
-                "ASM",
-            ),
-        )
+            matrix_glcm = glcm.construct_glcm(
+                image=image_array,
+                mask=tissue_mask,
+                distances=distances,
+                angles=angles,
+                symmetric=symmetric,
+                normed=normed,
+            )
 
-        glcm.save_glcm_features(
-            matrix=matrix_glcm,
-            glcm_features_output=glcm_features_output,
-            distances=distances,
-            angles=angles,
-            output_directory=output_directory_processed_texture_features_this_image_tile,
-        )
+            glcm_features_output = glcm.extract_glcm_features(
+                matrix=matrix_glcm,
+                features=(
+                    "contrast",
+                    "dissimilarity",
+                    "homogeneity",
+                    "energy",
+                    "correlation",
+                    "ASM",
+                ),
+            )
+
+            glcm.save_glcm_features(
+                matrix=matrix_glcm,
+                glcm_features_output=glcm_features_output,
+                distances=distances,
+                angles=angles,
+                output_directory=output_directory_processed_texture_features_this_image_tile,
+                analysis_type=analysis_type,
+            )
 
     # texture - perception
     if FLAG_PERCEPTION_FEATURES:
@@ -373,8 +410,14 @@ if __name__ == "__main__":
         logstr = ""
 
         for path_to_valid_image_tile in paths_to_valid_image_tiles:
+            path_to_corresponding_tissue_mask_tile = (
+                get_path_to_corresponding_tissue_mask_tile(
+                    path_to_valid_image_tile=path_to_valid_image_tile
+                )
+            )
             extract_texture_features_this_image(
-                path_to_valid_image_tile=path_to_valid_image_tile
+                path_to_valid_image_tile=path_to_valid_image_tile,
+                path_to_corresponding_tissue_mask_tile=path_to_corresponding_tissue_mask_tile,
             )
 
             now = datetime.now()
