@@ -144,7 +144,7 @@ def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile):
     path_to_corresponding_tissue_mask_tile = os.path.join(
         "/".join(path_splited[:slide_keyword_index]),
         slide_id,
-        f"tile_size_{TILE_SIZE}/whole_size/PSR",
+        f"tile_size_{TILE_SIZE}/whole_slide/PSR",
         "tissue_masks/tissue_mask",
         scene_id,
         f"{image_tile_name}.tif",
