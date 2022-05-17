@@ -1,8 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
 from scipy.stats import kurtosis
-from typing import Tuple, List, Dict
+from typing import Tuple
 
 
 def calculate_coarseness(image: np.ndarray) -> Tuple[np.ndarray, float]:
