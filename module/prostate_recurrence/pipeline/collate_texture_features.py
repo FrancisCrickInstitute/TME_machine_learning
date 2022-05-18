@@ -207,6 +207,7 @@ if __name__ == "__main__":
                         if glcm_features_rotated.empty:
                             continue
 
+                        glcm_features_rotated.set_index("feature")
                         glcm_features = glcm_features_rotated.T
                         glcm_features["slide_id"] = data_id
                         glcm_features["scene_id"] = scan_region
