@@ -219,7 +219,7 @@ if __name__ == "__main__":
                             combined_glcm_features_masked = (
                                 combined_glcm_features_masked.append(glcm_features)
                             )
-                        elif mask_condition == "nonmasked":
+                        elif mask_condition == "notmasked":
                             combined_glcm_features_notmasked = (
                                 combined_glcm_features_notmasked.append(glcm_features)
                             )
