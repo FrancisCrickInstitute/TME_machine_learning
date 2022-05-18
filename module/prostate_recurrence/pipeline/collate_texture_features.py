@@ -202,7 +202,12 @@ if __name__ == "__main__":
                         if not os.path.exists(path_to_glcm_features):
                             continue
 
-                        glcm_features = pd.read_csv(path_to_glcm_features).T
+                        glcm_features_rotated = pd.read_csv(path_to_glcm_features)
+
+                        if glcm_features_rotated.empty:
+                            continue
+
+                        glcm_features = glcm_features_rotated.T
                         glcm_features["slide_id"] = data_id
                         glcm_features["scene_id"] = scan_region
                         glcm_features["image_tile"] = image_tile
