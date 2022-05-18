@@ -102,6 +102,20 @@ FLAG_GLCM_FEATURES = args.flag_glcm_features
 FLAG_PERCEPTION_FEATURES = args.flag_perception_features
 
 
+def save_dataframes(
+    combined_glcm_features_masked: pd.DataFrame,
+    combined_glcm_features_notmasked: pd.DataFrame,
+):
+    for mask_condition, combined_glcm_features in zip(
+        ["masked", "notmasked"],
+        [combined_glcm_features_masked, combined_glcm_features_notmasked],
+    ):
+        path_to_save_combined_glcm_features = os.path.join(
+            OUTPUT_DIRECTORY, f"combined_glcm_features_{mask_condition}.csv"
+        )
+        combined_glcm_features.to_csv(path_to_save_combined_glcm_features, index=False)
+
+
 if __name__ == "__main__":
 
     all_paths_to_data = natsorted(
@@ -181,13 +195,14 @@ if __name__ == "__main__":
                 if FLAG_GLCM_FEATURES:
                     for mask_condition in ["masked", "notmasked"]:
                         glcm_features_filename = f"glcm_features_{mask_condition}.csv"
+                        path_to_glcm_features = os.path.join(
+                            output_directory_processed_features_scan_region_texture_image_tile,
+                            glcm_features_filename,
+                        )
+                        if not os.path.exists(path_to_glcm_features):
+                            continue
 
-                        glcm_features = pd.read_csv(
-                            os.path.join(
-                                output_directory_processed_features_scan_region_texture_image_tile,
-                                glcm_features_filename,
-                            )
-                        ).T
+                        glcm_features = pd.read_csv(path_to_glcm_features).T
                         glcm_features["slide_id"] = data_id
                         glcm_features["scene_id"] = scan_region
                         glcm_features["image_tile"] = image_tile
@@ -217,12 +232,10 @@ if __name__ == "__main__":
         logfile.close()
         logstr = ""
 
-    if FLAG_GLCM_FEATURES:
-        for mask_condition, combined_glcm_features in zip(
-            ["masked", "notmasked"],
-            [combined_glcm_features_masked, combined_glcm_features_notmasked],
-        ):
-            path_to_save_combined_glcm_features = os.path.join(
-                OUTPUT_DIRECTORY, f"combined_glcm_features_{mask_condition}.csv"
+        if FLAG_GLCM_FEATURES and (int(all_paths_to_data.index(path) + 1) % 20 == 0):
+            save_dataframes(
+                combined_glcm_features_masked, combined_glcm_features_notmasked
             )
-            combined_glcm_features.to_csv(path_to_save_combined_glcm_features, index=False)
+
+    if FLAG_GLCM_FEATURES:
+        save_dataframes(combined_glcm_features_masked, combined_glcm_features_notmasked)
