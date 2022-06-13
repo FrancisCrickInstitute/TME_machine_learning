@@ -181,3 +181,12 @@ if __name__ == "__main__":
                 save_path=subdirectory_to_save_mask_tiles,
                 size=TILE_SIZE,
             )
+
+        now = datetime.now()
+        date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+        logstr += f"{int(all_paths_to_data.index(path)+1)} data paths processed (total: {len(all_paths_to_data)}); finished at {date_time}\n"
+        logstr += "\n"
+        logfile = open(LOGFILE_PATH, "a")
+        logfile.write(logstr)
+        logfile.close()
+        logstr = ""
