@@ -5,7 +5,6 @@ from glob import glob
 
 import pandas as pd
 from natsort import natsorted
-from pipeline.generate_tiles_of_deconv_psr_masked import TILE_SIZE
 
 
 parser = argparse.ArgumentParser(prog="tme-ml-raw-data-summary")
@@ -33,8 +32,17 @@ parser.add_argument(
     default="PSR",
     help="options are PSR, HandE, or Both. currently only PSR is implemented.",
 )
+parser.add_argument(
+    "--tile_size",
+    dest="tile_size",
+    action="store",
+    type=int,
+    default=1024,
+    help="provide the number of pixels for tile size.",
+)
 args = parser.parse_args()
 RAW_DATA_PATH = args.raw_data_path
+TILE_SIZE = args.tile_size
 RAW_DATA_TYPE = args.raw_data_type
 # module_path = os.path.abspath(os.path.join("../../../module/"))
 MODULE_PATH = args.module_path
