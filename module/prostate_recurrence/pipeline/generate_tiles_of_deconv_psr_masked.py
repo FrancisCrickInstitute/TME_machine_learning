@@ -138,7 +138,7 @@ if __name__ == "__main__":
             "whole_slide",
             RAW_DATA_TYPE,
             "tissue_masks",
-            "tissue_mask",
+            "tissue_mask_v2",
         )
         assert os.path.exists(output_directory_processed_tissue_mask_tiles)
 
