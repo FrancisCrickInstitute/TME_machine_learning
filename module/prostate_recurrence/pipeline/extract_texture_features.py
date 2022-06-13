@@ -1,5 +1,4 @@
 import argparse
-from operator import ge
 import os
 import sys
 from datetime import datetime
@@ -145,7 +144,7 @@ def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile):
         "/".join(path_splited[:slide_keyword_index]),
         slide_id,
         f"tile_size_{TILE_SIZE}/whole_slide/PSR",
-        "tissue_masks/tissue_mask",
+        "tissue_masks/tissue_mask_v2",
         scene_id,
         f"{image_tile_name}.tif",
     )
@@ -366,7 +365,8 @@ if __name__ == "__main__":
 
                     for path_to_valid_image_tile in paths_to_valid_image_tiles:
                         extract_texture_features_this_image(
-                            path_to_valid_image_tile=path_to_valid_image_tile
+                            path_to_valid_image_tile=path_to_valid_image_tile,
+                            path_to_corresponding_tissue_mask_tile="",
                         )
 
                 else:
