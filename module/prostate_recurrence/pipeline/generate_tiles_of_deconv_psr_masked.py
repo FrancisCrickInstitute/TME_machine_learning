@@ -141,7 +141,7 @@ if __name__ == "__main__":
             "tissue_mask_v2",
         )
         if not os.path.exists(output_directory_processed_tissue_mask_tiles):
-            logstr += "... tissue mask tiles n/a; skipped ..."
+            logstr += "... tissue mask tiles n/a; skipped ...\n"
             continue
 
         output_directory_processed_tissue_mask_tiles_scan_region_paths = natsorted(
@@ -172,9 +172,11 @@ if __name__ == "__main__":
                 "psr",
                 "inverted_grayscale",
             )
-            assert os.path.exists(
+            if not os.path.exists(
                 output_directory_processed_deconvolved_psr_scan_region_path
-            )
+            ):
+                logstr += f"... deconvolved psr in {scan_region} n/a; skipped ...\n"
+                continue
 
             # get all image paths for this scan region
             output_directory_processed_tissue_mask_tiles_scan_region_image_paths = natsorted(
