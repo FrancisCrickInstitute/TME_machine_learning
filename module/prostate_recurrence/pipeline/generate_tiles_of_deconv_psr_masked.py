@@ -215,8 +215,8 @@ if __name__ == "__main__":
 
                     # multiple the above two
                     deconvolved_psr_tissue_masked_array = np.multiply(
-                        255 - tissue_mask_array,
-                        deconvolved_psr_array / 255,
+                        deconvolved_psr_array,
+                        tissue_mask_array / tissue_mask_array.max(),
                     ).astype(np.uint8)
 
                     deconvolved_psr_tissue_masked = Image.fromarray(
