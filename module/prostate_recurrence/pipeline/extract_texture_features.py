@@ -174,10 +174,8 @@ def extract_texture_features_this_image(
 
     # read image
     image_array = glcm.read_image(path_to_img=path_to_valid_image_tile)
-    tissue_mask_array = (
-        ~glcm.read_image(  # inversion as image_array in inverted grayscale
-            path_to_img=path_to_corresponding_tissue_mask_tile
-        )
+    tissue_mask_array = glcm.read_image(
+        path_to_img=path_to_corresponding_tissue_mask_tile
     )
     tissue_mask_array_contrast = (
         np.ones_like(tissue_mask_array) * tissue_mask_array.max()
