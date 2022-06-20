@@ -140,7 +140,9 @@ if __name__ == "__main__":
             "tissue_masks",
             "tissue_mask_v2",
         )
-        assert os.path.exists(output_directory_processed_tissue_mask_tiles)
+        if not os.path.exists(output_directory_processed_tissue_mask_tiles):
+            logstr += "... tissue mask tiles n/a; skipped ..."
+            continue
 
         output_directory_processed_tissue_mask_tiles_scan_region_paths = natsorted(
             glob(
@@ -216,7 +218,7 @@ if __name__ == "__main__":
                     # multiple the above two
                     deconvolved_psr_tissue_masked_array = np.multiply(
                         deconvolved_psr_array,
-                        tissue_mask_array / tissue_mask_array.max(),
+                        tissue_mask_array / 255,
                     ).astype(np.uint8)
 
                     deconvolved_psr_tissue_masked = Image.fromarray(
