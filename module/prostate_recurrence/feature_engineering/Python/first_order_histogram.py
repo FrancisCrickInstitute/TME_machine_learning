@@ -115,7 +115,7 @@ def extract_histogram_features(
         "mean": np.mean(image_flattened),
         "variance": np.var(image_flattened),
         "skewness": skew(image_flattened),
-        "kurtosis": kurtosis(image_flattened),
+        "kurtosis": kurtosis(image_flattened, fisher=False),
     }
     if histogram.sum() != 1:
         histogram /= histogram.sum()
