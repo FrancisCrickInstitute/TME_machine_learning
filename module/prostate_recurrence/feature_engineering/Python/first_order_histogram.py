@@ -61,7 +61,7 @@ def read_image(path_to_img: str) -> np.ndarray:
 
 
 def construct_histogram(
-    image: np.ndarray, levels: int = 256, normed: bool = True
+    image: np.ndarray, mask: np.ndarray, levels: int = 256, normed: bool = True
 ) -> np.ndarray:
     """construct histogram of pixel intensities.
 
@@ -69,23 +69,37 @@ def construct_histogram(
     ----------
     image : np.ndarray
         An input gray scale image as numpy array
+    mask : np.ndarray
+        An binary image as numpy array
+    levels : int
+        The number of intensity levels for binning the histogram
+    normed : bool
+        A boolean variable indicating if the histogram is normalised
 
     Returns
     -------
-    np.ndarray
+    Tuple[np.ndarray, np.ndarray]
         The histogram of pixel intesities, with elements indicating
         the frequency or probability at different gray levels, i.e., P[i].
+        The masked image as a numpy array.
     """
 
-    histogram, _ = np.histogram(image, bins=np.arange(-0.5, levels + 0.5, 1))
+    masked_image = np.multiply(image, mask).astype(np.uint8)
+
+    histogram, _ = np.histogram(
+        masked_image[masked_image > 0], bins=np.arange(-0.5, levels + 0.5, 1)
+    )
     if normed:
         histogram = histogram / histogram.sum()
 
-    return histogram
+    return histogram, masked_image
 
 
 def extract_histogram_features(
-    image: np.ndarray, histogram: np.ndarray, features: Tuple[str] = ()
+    image: np.ndarray,
+    histogram: np.ndarray,
+    exclude_background_pixels: bool = True,
+    features: Tuple[str] = (),
 ) -> Dict[str, float]:
     """extract quantitative features based on the input histogram
     This function inputs the histogram of pixel intensities in the format of
@@ -99,6 +113,9 @@ def extract_histogram_features(
     histogram : np.ndarray
         The histogram of pixel intensities, with elements indicating
         the frequency or probability at different gray levels, i.e., P[i].
+    exclude_background_pixels : bool
+        A boolean variable indicating whether to exclude pixels with zero 
+        intensity.
     features : Tuple[str]
         A tuple containing a set of quantitative features to extract based on
         the histogram of pixel intensities.
@@ -108,6 +125,10 @@ def extract_histogram_features(
     Dict[str, float]
         A dictionary of [feature name : feature value].
     """
+
+    if exclude_background_pixels:
+        image = image[image > 0]
+        histogram = histogram[1:]
 
     image_flattened = image.flatten()
     histogram_features_all = {
@@ -122,7 +143,9 @@ def extract_histogram_features(
     histogram_features_all.update(
         {
             "energy": np.power(histogram, 2).sum(),
-            "entropy": -np.sum(histogram * np.log2(histogram)),
+            "entropy": -np.sum(
+                histogram[histogram > 0] * np.log2(histogram[histogram > 0])
+            ),
         }
     )
 
