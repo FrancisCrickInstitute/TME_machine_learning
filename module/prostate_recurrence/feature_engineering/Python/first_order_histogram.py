@@ -114,7 +114,7 @@ def extract_histogram_features(
         The histogram of pixel intensities, with elements indicating
         the frequency or probability at different gray levels, i.e., P[i].
     exclude_background_pixels : bool
-        A boolean variable indicating whether to exclude pixels with zero 
+        A boolean variable indicating whether to exclude pixels with zero
         intensity.
     features : Tuple[str]
         A tuple containing a set of quantitative features to extract based on
@@ -181,13 +181,15 @@ def save_histogram_features(
         This function outputs histogram as image using matplotlib library
         """
 
-        figure_name = "histogram.pdf"
+        figure_name = "intensity_histogram.pdf"
         fig = plt.figure(figsize=(4, 4), dpi=300)
         ax = fig.add_axes([0.15, 0.15, 0.6, 0.6])
         ax.bar(np.arange(histogram.size), height=histogram)
         ax.set_xticks([0, 64, 128, 192, 255])
         plt.savefig(
-            os.path.join(output_directory, figure_name), dpi=300, transparent=True,
+            os.path.join(output_directory, figure_name),
+            dpi=300,
+            transparent=True,
         )
         plt.close()
 
@@ -195,7 +197,7 @@ def save_histogram_features(
         """save histogram as numpy array
         This function outputs histogram as a numpy array
         """
-        array_name = "histogram_array.npy"
+        array_name = "intensity_histogram_array.npy"
         with open(os.path.join(output_directory, array_name), "wb") as fout:
             np.save(fout, histogram)
 
@@ -203,11 +205,11 @@ def save_histogram_features(
         """save histogram quantitative features
         This function outputs histogram quantitative features into a .csv file.
         """
-        file_name = "histogram_features.csv"
+        file_name = "intensity_features.csv"
         columns = ["feature", "value"]
         data_rows = []
         for feature_name, feature_value in histogram_features_output.items():
-            feature_name_this_analysis = f"histogram_{feature_name}"
+            feature_name_this_analysis = f"intensity_{feature_name}"
             feature_value_this_analysis = feature_value
             data_rows.append((feature_name_this_analysis, feature_value_this_analysis))
         data_frame = pd.DataFrame(columns=columns, data=data_rows)
@@ -215,4 +217,4 @@ def save_histogram_features(
 
     save_histogram_as_image()
     save_histogram_as_array()
-    save_histogram_features()
+    save_histogram_features_as_csv()

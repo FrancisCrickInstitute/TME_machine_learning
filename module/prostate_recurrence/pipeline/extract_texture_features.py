@@ -177,19 +177,16 @@ def extract_texture_features_this_image(
     tissue_mask_array = glcm.read_image(
         path_to_img=path_to_corresponding_tissue_mask_tile
     )
-    tissue_mask_array_contrast = (
-        np.ones_like(tissue_mask_array) * tissue_mask_array.max()
-    ).astype(np.uint8)
+    tissue_mask_array_contrast = np.ones_like(tissue_mask_array)
 
     # texture - indensity
     if FLAG_INTENSITY_FEATURES:
-        nlevels = 16
-        histogram = first_order_histogram.construct_histogram(
-            image=image_array, levels=nlevels
+        histogram, masked_image_array = first_order_histogram.construct_histogram(
+            image=image_array, mask=tissue_mask_array
         )
 
         histogram_features_output = first_order_histogram.extract_histogram_features(
-            image=image_array,
+            image=masked_image_array,
             histogram=histogram,
             features=(
                 "median",
@@ -202,33 +199,14 @@ def extract_texture_features_this_image(
             ),
         )
 
-        # temporary code for saving outputs - need to save some histograms as well
-        columns = ["feature", "value"]
-        data_rows = []
-        for (
-            feature_name,
-            feature_value,
-        ) in histogram_features_output.items():
-            feature_name_this_analysis = f"intensity_{feature_name}"
-            feature_value_this_analysis = feature_value
-            data_rows.append(
-                (
-                    feature_name_this_analysis,
-                    feature_value_this_analysis,
-                )
-            )
-        data_frame = pd.DataFrame(columns=columns, data=data_rows)
-        data_frame.to_csv(
-            os.path.join(
-                output_directory_processed_texture_features_this_image_tile,
-                "intensity_features.csv",
-            ),
-            index=False,
+        first_order_histogram.save_histogram_features(
+            histogram=histogram,
+            histogram_features_output=histogram_features_output,
+            output_directory=output_directory_processed_texture_features_this_image_tile,
         )
 
     # texture - glcm
     if FLAG_GLCM_FEATURES:
-        # distances = [1, 10, 100]
         distances = [1, 2, 5, 11, 22, 45, 90, 182, 364]
         angles = [0, np.pi / 4.0, np.pi / 2.0, np.pi * 3 / 4.0]
         symmetric = True
@@ -238,9 +216,9 @@ def extract_texture_features_this_image(
             ["masked", "notmasked"], [tissue_mask_array, tissue_mask_array_contrast]
         ):
 
-            matrix_glcm = glcm.construct_glcm(
+            matrix_glcm, masked_image_array = glcm.construct_glcm(
                 image=image_array,
-                mask=tissue_mask,
+                mask=tissue_mask_array,
                 distances=distances,
                 angles=angles,
                 symmetric=symmetric,
