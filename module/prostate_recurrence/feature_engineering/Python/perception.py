@@ -1,6 +1,7 @@
+from socket import MSG_PEEK
 import numpy as np
 from scipy.stats import kurtosis
-from typing import Tuple
+from typing import Dict, Tuple
 
 
 def calculate_coarseness(image: np.ndarray) -> Tuple[np.ndarray, float]:
@@ -128,17 +129,43 @@ def calculate_coarseness(image: np.ndarray) -> Tuple[np.ndarray, float]:
     return (S, Coarseness)
 
 
-def calculate_contrast(image: np.ndarray):
+def calculate_contrast(
+    image: np.ndarray, mask: np.ndarray, exclude_background_pixels: bool = True
+) -> Dict[str, float]:
+    """extract contrast feature based on the input image
+
+    Parameters
+    ----------
+    image : np.ndarray
+        An input gray scale image as numpy array
+    mask : np.ndarray
+        An binary image as numpy array
+    exclude_background_pixels : bool, optional
+        A boolean variable indicating whether to exclude pixels with zero 
+        intensity, by default True
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
     assert image.ndim == 2 and image.shape[0] == image.shape[1]
 
-    image_flattened = image.flatten()
-    image_flattened_notnan = image_flattened[~np.isnan(image_flattened)]
+    masked_image = np.multiply(image, mask).astype(np.uint8)
 
-    kur = kurtosis(image_flattened_notnan)
-    std = np.std(image_flattened_notnan)
+    image_flattened = masked_image.flatten()
+    if exclude_background_pixels:
+        image_flattened = image_flattened[image_flattened > 0]
+
+    kur = kurtosis(image_flattened, fisher=False)
+    std = np.std(image_flattened)
 
     Contrast = std / np.power(kur, 1 / 4)
 
-    print("std:", std, "kurtosis:", kur, "Contrast: ", Contrast)
+    perception_contrast_features_output = {
+        "Contrast": Contrast,
+        "_std": std,
+        "_kurtosis": kur,
+    }
 
-    return Contrast
+    return perception_contrast_features_output
