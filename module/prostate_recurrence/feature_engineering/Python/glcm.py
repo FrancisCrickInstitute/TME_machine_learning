@@ -72,7 +72,7 @@ def construct_glcm(
     levels: int = 256,
     symmetric: bool = True,
     normed: bool = True,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     """construct GLCM for the input image
     This function inputs an input image in a format of a numpy
     array and constructs the GLCM. The GLCM, P[i,j,d,theta] is
@@ -99,16 +99,16 @@ def construct_glcm(
 
     Returns
     -------
-    np.ndarray
+    Tuple[np.ndarray, np.ndarray]
         The GLCM with respect to different levels of distances and angles,
         i.e., P[i,j,d,theta].
+        The masked image as a numpy array.
     """
 
     masked_image = image.copy()
     masked_image[masked_image == 0] = 1
 
-    if (mask == 0).any():
-        masked_image[~mask] = 0
+    masked_image = np.multiply(masked_image, mask).astype(np.uint8)
 
     glcm = graycomatrix(
         image=masked_image,
@@ -119,7 +119,7 @@ def construct_glcm(
         normed=normed,
     )
 
-    return glcm[1:, 1:, :, :]
+    return glcm[1:, 1:, :, :], masked_image
 
 
 def extract_glcm_features(
