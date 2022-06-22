@@ -1,5 +1,5 @@
 """# a set of functions for extracting quantitative features based on the
-first order histogram of pixel intensities.
+histogram of pixel intensities.
 
 ## read_image(...) to read image using PIL library.
 This function expects the full absolute path to an input image file as input
@@ -16,9 +16,9 @@ numpy array.
 ## extract_histogram_features(...) to extract quantitative features from the
 histogram.
 This function expects an image in the format of a numpy array, the histogram of
-the image's pixel intensities, and a tuple of quantitative features as input
-parameters. Numpy and scipy libraries are used to extract features. This function
-returns a dictionary of [feature name: feature value].
+the image's pixel intensities, and a tuple containing names of quantitative features 
+as input parameters. Numpy and scipy libraries are used to extract features. 
+This function returns a dictionary of [feature name: feature value].
 
 ## save_histogram_features(...) to save histogram and quantitative features.
 This function expects the histogram, a dictionary of the extracted features, and
@@ -63,25 +63,33 @@ def read_image(path_to_img: str) -> np.ndarray:
 def construct_histogram(
     image: np.ndarray, mask: np.ndarray, levels: int = 256, normed: bool = True
 ) -> np.ndarray:
-    """construct histogram of pixel intensities.
+    """construct a histogram of pixel intensities.
+    This function inputs the gray scale image and its corresponding binary
+    tissue mask, both in the format of a numpy array, and configuration
+    configuration parameters including number of binns and whether histogram
+    should be normalised. This function outputs a histogram of pixel intensities
+    and the masked image, both in the format of a numpy array.
+    The histogram is created using np.histogram().
 
     Parameters
     ----------
     image : np.ndarray
-        An input gray scale image as numpy array
+        An input gray scale image in the format of a numpy array
     mask : np.ndarray
-        An binary image as numpy array
+        An binary image in the format of a numpy array
     levels : int
-        The number of intensity levels for binning the histogram
+        The number of bins for creating the histogram
     normed : bool
         A boolean variable indicating if the histogram is normalised
 
     Returns
     -------
     Tuple[np.ndarray, np.ndarray]
-        The histogram of pixel intesities, with elements indicating
-        the frequency or probability at different gray levels, i.e., P[i].
-        The masked image as a numpy array.
+        A tuple of numpy arrays, including:
+        * A histogram of pixel intesities in the format of a numpy array,
+        with elements indicating the frequency or probability of pixel
+        intensities at different gray levels, i.e., P[i].
+        * The masked image in the format of a numpy array.
     """
 
     masked_image = np.multiply(image, mask).astype(np.uint8)
@@ -105,11 +113,15 @@ def extract_histogram_features(
     This function inputs the histogram of pixel intensities in the format of
     a numpy array, namely, P[i], and extracts a set of quantitative features
     as instructed by the user.
+    Note that the input image should be a masked image generated in the
+    construct_histogram() function if a tissue mask is considered.
+    Quantitative features are generated using functions in numpy and scipy
+    libraries.
 
     Parameters
     ----------
     image : np.ndarray
-        An input gray scale image as numpy array
+        An input gray scale image in the format of numpy array.
     histogram : np.ndarray
         The histogram of pixel intensities, with elements indicating
         the frequency or probability at different gray levels, i.e., P[i].
@@ -117,8 +129,8 @@ def extract_histogram_features(
         A boolean variable indicating whether to exclude pixels with zero
         intensity.
     features : Tuple[str]
-        A tuple containing a set of quantitative features to extract based on
-        the histogram of pixel intensities.
+        A tuple containing the names of quantitative features that are to be
+        extracted based on the histogram of pixel intensities.
 
     Returns
     -------
@@ -164,16 +176,19 @@ def save_histogram_features(
     output_directory: str,
 ) -> None:
     """save histogram and quantitative features
+    This function inputs the histogram of pixel intensities, the quantitative
+    features, and the directory to write outputs into.
 
     Parameters
     ----------
     histogram : np.ndarray
-        The histogram of pixel intensities, with elements indicating
-        the frequency or probability at different gray levels, i.e., P[i].
+        The histogram of pixel intensities in the form of numpy array,
+        with elements indicating the frequency or probability of pixel
+        intensities at certain gray levels, i.e., P[i].
     histogram_features_output : Dict[str, float]
         A dictionary of [feature name : feature value].
     output_directory : str
-        Directory to save outputs into
+        Directory in which the feature outputs are saved
     """
 
     def save_histogram_as_image() -> None:
