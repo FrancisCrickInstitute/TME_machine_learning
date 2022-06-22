@@ -1,4 +1,5 @@
-"""# a set of functions for extracting GLCM features
+"""# a set of functions for extracting GLCM features based on analysis of co-ocurring
+intensity values in pairs of pixels
 
 ## GLCM is short for gray scale co-occurrence matrix
 
@@ -8,12 +9,12 @@ parameters. In practice, the input image will be an image patch after tiling
 of a whole slide image. This function returns a numpy array of the image.
 
 ## construct_glcm(...) to construct the GLCM using skimage library.
-This function expects an image in the format of a numpy array and settings
-for GLCM construction as input parameters. The settings include a list of pixel-
-pair distances, a list of pixel-pair angles, number of gray levels, whether
+This function expects an image and a mask, both in the format of a numpy array, 
+and settings for GLCM construction as input parameters. The settings include a list of
+pixel-pair distances, a list of pixel-pair angles, number of gray levels, whether
 GLCM is symmetric, and whether the elements in GLCM are normalised. This function
 returns GLCM, namely, P[i,j,d,theta] with respect to different combinations of
-distances and angles, in the format of a numpy array.
+distances and angles, in the format of a numpy array, and the masked image array.
 
 ## extract_glcm_features(...) to extract quantitative features from GLCM, partly
 using skimage library.
@@ -44,8 +45,7 @@ from skimage.feature import graycomatrix, graycoprops
 
 def read_image(path_to_img: str) -> np.ndarray:
     """read gray scale image patch into a numpy array
-    This function reads a gray scale image using PIL library
-    and returns a numpy array
+    This function reads a gray scale image using PIL library and returns a numpy array
 
     Parameters
     ----------
@@ -74,35 +74,41 @@ def construct_glcm(
     normed: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """construct GLCM for the input image
-    This function inputs an input image in a format of a numpy
-    array and constructs the GLCM. The GLCM, P[i,j,d,theta] is
-    returned as a numpy array.
+    This function inputs a gray scale image in a format of a numpy array and constructs the GLCM.
+    The GLCM is constructed for each combination of unique distance and angle values provided.
+    The GLCM, P[i,j,d,theta], with respect to different distance and angle values and the masked
+    image are returned in the format of numpy arrays.
+    Note that in implementation of a mask, only pixels outside the mask are assigned to have zero
+    intensities. The first row and the first column of the GLCM, which reflect any analyses involving
+    pixels with zero intensities, are excluded from further calculations (i.e., not returned from this
+    function).
 
     Parameters
     ----------
     image : np.ndarray
-        An input gray scale image as numpy array
+        An input gray scale image in the format of a numpy array
     image_mask : np.ndarray
-        An binary image as numpy array
+        An binary image in the format of a numpy array
     distances : List[int]
-        A list of pixel-pair offset distances
+        A list of distance values, each used as an input parameter for a given realisation of GLCM
+        construction.
     angles : List[float]
-        A list of pixel-pair angles in radians
+        A list of angle values in radians, each used as an input parameter for a given realisation of
+        of GLCM construction.
     levels : int, optional
         The number of gray levels, by default 256
     symmetric : bool, optional
-        A boolean variable indicating if GLCM is symmetric,
-        by default True
+        A boolean variable indicating if GLCM is symmetric, by default True
     normed : bool, optional
-        A boolean variable indicating if GLCM is normalised,
-        by default True
+        A boolean variable indicating if GLCM is normalised, by default True
 
     Returns
     -------
     Tuple[np.ndarray, np.ndarray]
-        The GLCM with respect to different levels of distances and angles,
+        A tuple of numpy arrays including
+        * The GLCM with respect to different levels of distances and angles,
         i.e., P[i,j,d,theta].
-        The masked image as a numpy array.
+        * The masked image as a numpy array.
     """
 
     masked_image = image.copy()
@@ -126,27 +132,25 @@ def extract_glcm_features(
     matrix: np.ndarray, features: Tuple[str]
 ) -> Dict[str, np.ndarray]:
     """extract quantitative features based on the input GLCM
-    This function inputs the GLCM in the format of a numpy array, namely,
-    P[i,j,d,theta], and extracts a set of quantitative features as instructed
-    by the user.
-    Note: Scikit Image library provides implementation of an imcomplete set of
-    GLCM features, so this function contains customised implementation of the
-    other GLCM features not covered by Scikit Image.
+    This function inputs the GLCM in the format of a numpy array, namely, P[i,j,d,theta],
+    and extracts a set of quantitative features as instructed by the user.
+    Note: Scikit Image library provides implementation of an imcomplete set of GLCM features,
+    which are currently implemented in this function. In the future, this function will also
+    contain customised implementation of the other GLCM features.
 
     Parameters
     ----------
     matrix : np.ndarray
-        The GLCM with respect to different levels of distances and angles,
-        i.e., P[i,j,d,theta]
+        The GLCM with respect to different levels of distances and angles, i.e., P[i,j,d,theta],
+        in the format of a numpy array
     features : Tuple[str]
-        A tuple containing a set of quantitative features to extract based on
-        GLCM
+        A tuple containing names of quantitative features to extract based on GLCM
 
     Returns
     -------
     Dict[str, np.ndarray]
-        A dictionary of [feature name : feature value] with feature value stored
-        with respect to different distances and angles
+        A dictionary of [feature name : feature value] with outputs saved with respect to different
+        conditions of distance and angle values
     """
 
     features_implemented_in_skimage: Tuple = (
@@ -182,23 +186,25 @@ def save_glcm_features(
     analysis_type: str = "masked",
 ) -> None:
     """save GLCM and quantitative features
-    This function inputs the constructed GLCM and extracted quantitative features
-    and outputs these results into numpy arrays and tables, respectively.
+    This function inputs the constructed GLCM and extracted quantitative features and outputs these
+    results into numpy arrays and data frames, respectively.
 
     Parameters
     ----------
     matrix : np.ndarray
-        The GLCM with respect to different levels of distances and angles,
-        i.e., P[i,j,d,theta]
+        The GLCM with respect to different conditions of distance and angle values, i.e., P[i,j,d,theta],
+        in the format of a numpy array
     glcm_features_output : Dict[str, np.ndarray]
-        A dictionary of [feature name : feature value] with feature value stored
-        with respect to different distances and angles
+        A dictionary of [feature name : feature value] with feature value stored with respect to different
+        conditions of distance and angle values
     distances : List[int]
-        A list of pixel-pair offset distances
+        A list of distance values, each used as an input parameter for a given realisation of GLCM
+        construction.
     angles : List[float]
-        A list of pixel-pair angles in radians
+        A list of angle values in radians, each used as an input parameter for a given realisation of
+        of GLCM construction.
     output_directory: str
-        Directory to save outputs into
+        Directory in which the feature outputs are saved
     """
 
     def save_glcm_as_image() -> None:
@@ -257,9 +263,3 @@ def save_glcm_features(
     save_glcm_as_image()
     save_glcm_as_array()
     save_glcm_features_as_csv()
-
-
-# def batch_processing(
-#     input_directory: str, filename_pattern: str, output_directory: str
-# ):
-#     pass
