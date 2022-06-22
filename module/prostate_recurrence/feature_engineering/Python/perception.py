@@ -1,4 +1,13 @@
-from socket import MSG_PEEK
+"""# a set of functions for extracting quantitative features under the category of perception
+
+## calculate_coarseness() to extract the coarseness features.
+
+## calculate_contrast() to extract the contrast features.
+This function expects a gray scale image and a mask, both in the format of a numpy array, and
+settings as input parameters. Settings include whether to exclude background pixels.
+
+"""
+
 import numpy as np
 from scipy.stats import kurtosis
 from typing import Dict, Tuple
@@ -133,21 +142,26 @@ def calculate_contrast(
     image: np.ndarray, mask: np.ndarray, exclude_background_pixels: bool = True
 ) -> Dict[str, float]:
     """extract contrast feature based on the input image
+    This function inputs a gray scale image and a mask, both in the format of a numpy array, and
+    extracts the contrast feature under the category of perception.
+    Note that as part of the feature extraction, kurtosis is calculated using the Scipy library.
+    Setting fisher=False results in the Pearson kurtosis to be calculated, which should lead to
+    a positive value, with normal distribution giving a value of 3.
 
     Parameters
     ----------
     image : np.ndarray
-        An input gray scale image as numpy array
+        An input gray scale image in the format of a numpy array
     mask : np.ndarray
-        An binary image as numpy array
+        An binary image in the format of a numpy array
     exclude_background_pixels : bool, optional
-        A boolean variable indicating whether to exclude pixels with zero 
-        intensity, by default True
+        A boolean variable indicating whether to exclude pixels with zero intensity,
+        by default True
 
     Returns
     -------
-    _type_
-        _description_
+    Dict[str, float]
+        A dictionary of [feature name : feature value]
     """
     assert image.ndim == 2 and image.shape[0] == image.shape[1]
 
