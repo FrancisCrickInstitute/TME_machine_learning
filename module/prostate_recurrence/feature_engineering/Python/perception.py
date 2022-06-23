@@ -1,5 +1,8 @@
 """# a set of functions for extracting quantitative features under the category of perception
 
+A reference for Tamura perception features:
+"Evaluation of Texture Features for Content-Based Image Retrieval" by Peter Howarth & Stefan Rüger
+
 ## calculate_coarseness() to extract the coarseness features.
 
 ## calculate_contrast() to extract the contrast features.
@@ -8,18 +11,28 @@ settings as input parameters. Settings include whether to exclude background pix
 
 """
 
-import numpy as np
-from scipy.stats import kurtosis
 from typing import Dict, Tuple
 
+import numpy as np
+from numba import njit, prange
+from scipy.stats import kurtosis
 
-def calculate_coarseness(image: np.ndarray) -> Tuple[np.ndarray, float]:
+
+def calculate_coarseness(
+    image: np.ndarray,
+    mask: np.ndarray,
+    k_min: int = 1,
+    k_max: int = 8,
+    use_numba: bool = True,
+) -> Tuple[Dict[str, np.ndarray], np.ndarray, float]:
     """calculate coarseness
 
     Parameters
     ----------
     image : np.ndarray
-        An input gray scale image as numpy array
+        An input gray scale image in the format of a numpy array
+    mask : np.ndarray
+        A binary image in the format of a numpy array
 
     Returns
     -------
@@ -43,7 +56,7 @@ def calculate_coarseness(image: np.ndarray) -> Tuple[np.ndarray, float]:
             A numpy array recording the mean pixel intensity over a square
             neighbourhood of a size of 2^k.
         """
-        A = np.full_like(image, fill_value=np.nan)
+        A = np.zeros_like(image)
         nh_size_half = int(2 ** (k - 1))
 
         low = nh_size_half
@@ -51,17 +64,63 @@ def calculate_coarseness(image: np.ndarray) -> Tuple[np.ndarray, float]:
 
         for row in np.arange(low, high):
             for col in np.arange(low, high):
-                A[row, col] = (
-                    np.sum(
-                        image[
-                            row - nh_size_half : row + nh_size_half,
-                            col - nh_size_half : col + nh_size_half,
-                        ]
-                    )
-                    / nh_size_half
-                    / nh_size_half
-                    / 4
+                if (
+                    mask[
+                        row - nh_size_half : row + nh_size_half,
+                        col - nh_size_half : col + nh_size_half,
+                    ]
+                    == 0
+                ).any():
+                    continue
+                A[row, col] = np.sum(
+                    image[
+                        row - nh_size_half : row + nh_size_half,
+                        col - nh_size_half : col + nh_size_half,
+                    ]
                 )
+        A = np.divide(A, nh_size_half * nh_size_half * 4)
+
+        return A
+
+    @njit(parallel=True)
+    def calculate_A_numba(k: int) -> np.ndarray:
+        """calculate the mean pixel intensity over a square neighbourhood
+        of a size of 2^k, over the image.
+
+        Parameters
+        ----------
+        k : int
+            Log2 the size of a square neighbourhood.
+
+        Returns
+        -------
+        np.ndarray
+            A numpy array recording the mean pixel intensity over a square
+            neighbourhood of a size of 2^k.
+        """
+        A = np.zeros_like(image)
+        nh_size_half = int(2 ** (k - 1))
+
+        low = nh_size_half
+        high = A.shape[1] - nh_size_half
+
+        for row in prange(low, high):
+            for col in prange(low, high):
+                if (
+                    mask[
+                        row - nh_size_half : row + nh_size_half,
+                        col - nh_size_half : col + nh_size_half,
+                    ]
+                    == 0
+                ).any():
+                    continue
+                A[row, col] = np.sum(
+                    image[
+                        row - nh_size_half : row + nh_size_half,
+                        col - nh_size_half : col + nh_size_half,
+                    ]
+                )
+        A = np.divide(A, nh_size_half * nh_size_half * 4)
 
         return A
 
@@ -86,8 +145,8 @@ def calculate_coarseness(image: np.ndarray) -> Tuple[np.ndarray, float]:
             neighbourhood of a size of 2^k, in both horizontal and vertical
             directions, respectively.
         """
-        E_h = np.full_like(image, fill_value=np.nan)
-        E_v = np.full_like(image, fill_value=np.nan)
+        E_h = np.zeros_like(image)
+        E_v = np.zeros_like(image)
         nh_size_half = int(2 ** (k - 1))
 
         low = nh_size_half * 2
@@ -95,47 +154,162 @@ def calculate_coarseness(image: np.ndarray) -> Tuple[np.ndarray, float]:
 
         for row in np.arange(low, high):
             for col in np.arange(low, high):
-                E_h[row, col] = np.abs(
-                    A[row, col + nh_size_half] - A[row, col - nh_size_half]
-                )
-                E_v[row, col] = np.abs(
-                    A[row + nh_size_half, col] - A[row - nh_size_half, col]
-                )
+                if A[row, col + nh_size_half] and A[row, col - nh_size_half]:
+                    E_h[row, col] = np.abs(
+                        A[row, col + nh_size_half] - A[row, col - nh_size_half]
+                    )
+                if A[row + nh_size_half, col] and A[row - nh_size_half, col]:
+                    E_v[row, col] = np.abs(
+                        A[row + nh_size_half, col] - A[row - nh_size_half, col]
+                    )
 
         return (E_h, E_v)
 
+    @njit(parallel=True)
+    def calculate_E_numba(k: int, A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """calculate the difference between adjacent square neighbourhoods,
+        in the mean pixel intensity over a square neighbourhood of a size of 2^k,
+        in both horizontal and vertical directions.
+
+        Parameters
+        ----------
+        k : int
+            Log2 the size of a square neighbourhood.
+        A : np.ndarray
+            A numpy array recording the mean pixel intensity over a square
+            neighbourhood of a size of 2^k.
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            A tuple of numpy arrays recording the difference between adjacent
+            square neighbourhoods, in the mean pixel intensity over a square
+            neighbourhood of a size of 2^k, in both horizontal and vertical
+            directions, respectively.
+        """
+        E_h = np.zeros_like(image)
+        E_v = np.zeros_like(image)
+        nh_size_half = int(2 ** (k - 1))
+
+        low = nh_size_half * 2
+        high = E_h.shape[1] - nh_size_half * 2
+
+        for row in prange(low, high):
+            for col in prange(low, high):
+                if A[row, col + nh_size_half] and A[row, col - nh_size_half]:
+                    E_h[row, col] = np.abs(
+                        A[row, col + nh_size_half] - A[row, col - nh_size_half]
+                    )
+                if A[row + nh_size_half, col] and A[row - nh_size_half, col]:
+                    E_v[row, col] = np.abs(
+                        A[row + nh_size_half, col] - A[row - nh_size_half, col]
+                    )
+
+        return (E_h, E_v)
+
+    def calculate_S() -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
+        # K_MAX = int(np.floor(np.log2(image.shape[0])))
+
+        A_all_k = np.zeros(((k_max, image.shape[0], image.shape[1])))
+        E_h_all_k = np.zeros(((k_max, image.shape[0], image.shape[1])))
+        E_v_all_k = np.zeros(((k_max, image.shape[0], image.shape[1])))
+
+        print("=== calculation of A & E for various ks ===")
+        for k in np.arange(k_min, k_max + 1):
+            print(f"> k = {k}, window size = {int(2**k)}")
+
+            print("... calculating A_k ")
+            A_all_k[k - 1] = A_k = calculate_A(k)
+
+            print("... calculating E_k ")
+            (E_h_all_k[k - 1], E_v_all_k[k - 1]) = calculate_E(k, A_k)
+
+        print("=== calculation of S for all pixels ===")
+        S = np.zeros_like(image)
+        for row in np.arange(image.shape[0]):
+            for col in np.arange(image.shape[1]):
+                if (
+                    mask[row, col] == 0
+                    or (E_h_all_k[:, row, col] == 0).any()
+                    or (E_v_all_k[:, row, col] == 0).any()
+                ):
+                    continue
+                k_h_opt, val_h = (
+                    E_h_all_k[:, row, col].argmax() + k_min,
+                    E_h_all_k[:, row, col].max(),
+                )
+                k_v_opt, val_v = (
+                    E_v_all_k[:, row, col].argmax() + k_min,
+                    E_v_all_k[:, row, col].max(),
+                )
+
+                k_opt = k_h_opt if val_h > val_v else k_v_opt
+
+                S[row, col] = 2 ** k_opt
+
+        Coarseness_arrays = {
+            "A_all_k": A_all_k,
+            "E_h_all_k": E_h_all_k,
+            "E_v_all_k": E_v_all_k,
+        }
+
+        return S, Coarseness_arrays
+
+    @njit(parallel=True)
+    def calculate_S_numba() -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
+        # K_MAX = int(np.floor(np.log2(image.shape[0])))
+
+        A_all_k = np.zeros(((k_max, image.shape[0], image.shape[1])))
+        E_h_all_k = np.zeros(((k_max, image.shape[0], image.shape[1])))
+        E_v_all_k = np.zeros(((k_max, image.shape[0], image.shape[1])))
+
+        print("=== calculation of A & E for various ks ===")
+        for k in np.arange(k_min, k_max + 1):
+            print(f"> k = {k}, window size = {int(2**k)}")
+
+            print("... calculating A_k ")
+            A_all_k[k - 1] = A_k = calculate_A_numba(k)
+
+            print("... calculating E_k ")
+            (E_h_all_k[k - 1], E_v_all_k[k - 1]) = calculate_E_numba(k, A_k)
+
+        print("=== calculation of S for all pixels ===")
+        S = np.zeros_like(image)
+        for row in prange(image.shape[0]):
+            for col in prange(image.shape[1]):
+                if mask[row, col] == 0:
+                    continue
+                k_h_opt, val_h = (
+                    E_h_all_k[:, row, col].argmax() + k_min,
+                    E_h_all_k[:, row, col].max(),
+                )
+                k_v_opt, val_v = (
+                    E_v_all_k[:, row, col].argmax() + k_min,
+                    E_v_all_k[:, row, col].max(),
+                )
+
+                k_opt = k_h_opt if val_h > val_v else k_v_opt
+
+                S[row, col] = 2 ** k_opt
+
+        Coarseness_arrays = {
+            "A_all_k": A_all_k,
+            "E_h_all_k": E_h_all_k,
+            "E_v_all_k": E_v_all_k,
+        }
+
+        return S, Coarseness_arrays
+
     assert image.ndim == 2 and image.shape[0] == image.shape[1]
 
-    K_MAX = int(np.floor(np.log2(image.shape[0])))
+    if use_numba:
+        S, Coarseness_arrays = calculate_S_numba()
+    else:
+        S, Coarseness_arrays = calculate_S()
 
-    E_h_all_k = np.zeros(((K_MAX, image.shape[0], image.shape[1])))
-    E_v_all_k = np.zeros(((K_MAX, image.shape[0], image.shape[1])))
-    for k in np.arange(1, K_MAX + 1):
-        print(f"> calculation for k = {k}, window size = {int(2**k)}")
-        A_k = calculate_A(k)
-        (E_h_all_k[k - 1], E_v_all_k[k - 1]) = calculate_E(k, A_k)
+    Coarseness = np.nanmean(S[S > 0])
 
-    S = np.full_like(image, fill_value=np.nan)
-    for row in np.arange(image.shape[0]):
-        for col in np.arange(image.shape[1]):
-            if np.isnan(E_h_all_k[:, row, col]).any():
-                continue
-            k_h_opt, val_h = (
-                E_h_all_k[:, row, col].argmax() + 1,
-                E_h_all_k[:, row, col].max(),
-            )
-            k_v_opt, val_v = (
-                E_v_all_k[:, row, col].argmax() + 1,
-                E_v_all_k[:, row, col].max(),
-            )
-
-            k_opt = k_h_opt if val_h > val_v else k_v_opt
-
-            S[row, col] = 2 ** k_opt
-
-    Coarseness = np.nanmean(S)
-
-    return (S, Coarseness)
+    return (Coarseness_arrays, S, Coarseness)
 
 
 def calculate_contrast(
