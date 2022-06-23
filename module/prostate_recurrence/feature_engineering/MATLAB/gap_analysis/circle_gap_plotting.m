@@ -1,4 +1,4 @@
-function circle_gap_plotting(label_matrix,filename)
+function circle_gap_plotting(label_matrix,input_gap_matrix,filename)
 %CIRCLE_GAP_PLOTTING plots the gap filling circles with random colour
 %alongside the fibres in white.
 % pixel and the nearest fibre for a logical input matrix of fibres and
@@ -26,7 +26,10 @@ function circle_gap_plotting(label_matrix,filename)
 %   International License.
 
 cm=rand(length(unique(label_matrix))+1,3);
-cm(1,:)=1;
+cm(1,:)=0;
 RGB = ind2rgb(label_matrix+1,cm);
+RGB(:,:,1)=max(RGB(:,:,1),input_gap_matrix);
+RGB(:,:,2)=max(RGB(:,:,2),input_gap_matrix);
+RGB(:,:,3)=max(RGB(:,:,3),input_gap_matrix);
 imwrite(RGB,filename)
 end
