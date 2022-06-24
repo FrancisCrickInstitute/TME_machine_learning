@@ -4,10 +4,15 @@ A reference for Tamura perception features:
 "Evaluation of Texture Features for Content-Based Image Retrieval" by Peter Howarth & Stefan Rüger
 
 ## calculate_coarseness() to extract the coarseness features.
+This function expects a gray scale image and a mask, both in the format of a numpy array, and
+settings as input parameters. Settings include minimum and maximum length scales and whether to
+use numba to parallel the code. This function returns average coarseness values and intermediate
+arrays during calculation.
 
 ## calculate_contrast() to extract the contrast features.
 This function expects a gray scale image and a mask, both in the format of a numpy array, and
-settings as input parameters. Settings include whether to exclude background pixels.
+settings as input parameters. Settings include whether to exclude background pixels. This function
+returns the contrast value and intermediate values e.g., kurtosis. 
 
 """
 
@@ -26,6 +31,10 @@ def calculate_coarseness(
     use_numba: bool = True,
 ) -> Tuple[Dict[str, np.ndarray], np.ndarray, float]:
     """calculate coarseness
+    This function inputs a gray scale image and a binary mask, both in a format of a
+    numpy array and settings. The settings include the smallest and largest spatial
+    scales for calculating coarseness and whether to use numba to paralell the code.
+    This function returns a tuple of outputs, including the coarseness value.
 
     Parameters
     ----------
@@ -33,28 +42,40 @@ def calculate_coarseness(
         An input gray scale image in the format of a numpy array
     mask : np.ndarray
         A binary image in the format of a numpy array
+    k_min : int
+        An integer indicating the smallest spatial scale for calculating coarseness,
+        by default 1, corresponding to a spatial window size of 2^1
+    k_min : int
+        An integer indicating the largest spatial scale for calculating coarseness,
+        by default 8, corresponding to a spatial window size of 2^8
+    use_numba : bool
+        A boolean variable indicating whether to use numba to parallelise the code,
+        by default True
 
     Returns
     -------
-    Tuple[np.ndarray, float]
-        A numpy array of coarseness values at different positions within
-        the input image and the mean coarseness value over the image.
+    Tuple[Dict[str, np.ndarray], np.ndarray, float]
+        A tuple of outputs, including
+        * A dictionary of arrays during the calculation of coarseness.
+        * A numpy array of coarseness values at different positions within
+        the input image;
+        * The mean coarseness value over the image.
     """
 
     def calculate_A(k: int) -> np.ndarray:
-        """calculate the mean pixel intensity over a square neighbourhood
-        of a size of 2^k, over the image.
+        """calculate the mean pixel intensity over a square spatial window
+        with an edge size of 2^k, over the image.
 
         Parameters
         ----------
         k : int
-            Log2 the size of a square neighbourhood.
+            Log2 the size of a square spatial window.
 
         Returns
         -------
         np.ndarray
             A numpy array recording the mean pixel intensity over a square
-            neighbourhood of a size of 2^k.
+            spatial window with an edge size of 2^k.
         """
         A = np.zeros_like(image)
         nh_size_half = int(2 ** (k - 1))
@@ -84,19 +105,20 @@ def calculate_coarseness(
 
     @njit(parallel=True)
     def calculate_A_numba(k: int) -> np.ndarray:
-        """calculate the mean pixel intensity over a square neighbourhood
-        of a size of 2^k, over the image.
+        """calculate the mean pixel intensity over a square spatial window
+        with an edge size of 2^k, over the image.
+        Numba is used to paralell the code.
 
         Parameters
         ----------
         k : int
-            Log2 the size of a square neighbourhood.
+            Log2 the size of a square spatial window.
 
         Returns
         -------
         np.ndarray
             A numpy array recording the mean pixel intensity over a square
-            neighbourhood of a size of 2^k.
+            spatial window with an edge size of 2^k.
         """
         A = np.zeros_like(image)
         nh_size_half = int(2 ** (k - 1))
@@ -125,8 +147,8 @@ def calculate_coarseness(
         return A
 
     def calculate_E(k: int, A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """calculate the difference between adjacent square neighbourhoods,
-        in the mean pixel intensity over a square neighbourhood of a size of 2^k,
+        """calculate the difference between adjacent square spatial windows,
+        in the mean pixel intensity over a square spatial window with an edge size of 2^k,
         in both horizontal and vertical directions.
 
         Parameters
@@ -134,15 +156,15 @@ def calculate_coarseness(
         k : int
             Log2 the size of a square neighbourhood.
         A : np.ndarray
-            A numpy array recording the mean pixel intensity over a square
-            neighbourhood of a size of 2^k.
+            A numpy array recording the mean pixel intensity over a square spatial window
+            with an edge  a size of 2^k.
 
         Returns
         -------
         Tuple[np.ndarray, np.ndarray]
             A tuple of numpy arrays recording the difference between adjacent
-            square neighbourhoods, in the mean pixel intensity over a square
-            neighbourhood of a size of 2^k, in both horizontal and vertical
+            square spatial windows, in the mean pixel intensity over a square
+            spatial window with an edge size of 2^k, in both horizontal and vertical
             directions, respectively.
         """
         E_h = np.zeros_like(image)
@@ -167,24 +189,25 @@ def calculate_coarseness(
 
     @njit(parallel=True)
     def calculate_E_numba(k: int, A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """calculate the difference between adjacent square neighbourhoods,
-        in the mean pixel intensity over a square neighbourhood of a size of 2^k,
+        """calculate the difference between adjacent square spatial windows,
+        in the mean pixel intensity over a square spatial window with an edge size of 2^k,
         in both horizontal and vertical directions.
+        Numba is used to paralell the code.
 
         Parameters
         ----------
         k : int
             Log2 the size of a square neighbourhood.
         A : np.ndarray
-            A numpy array recording the mean pixel intensity over a square
-            neighbourhood of a size of 2^k.
+            A numpy array recording the mean pixel intensity over a square spatial window
+            with an edge  a size of 2^k.
 
         Returns
         -------
         Tuple[np.ndarray, np.ndarray]
             A tuple of numpy arrays recording the difference between adjacent
-            square neighbourhoods, in the mean pixel intensity over a square
-            neighbourhood of a size of 2^k, in both horizontal and vertical
+            square spatial windows, in the mean pixel intensity over a square
+            spatial window with an edge size of 2^k, in both horizontal and vertical
             directions, respectively.
         """
         E_h = np.zeros_like(image)
@@ -208,7 +231,20 @@ def calculate_coarseness(
         return (E_h, E_v)
 
     def calculate_S() -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
-        # K_MAX = int(np.floor(np.log2(image.shape[0])))
+        """calculate the coarseness value at different length scales
+        The function iterates over different length scales and calculate the A
+        and E_h and E_v at each length scale.
+        Then, at each pixel, the coarseness value reflects the length scale that
+        gives the largest E_h or E_v value.
+
+        Returns
+        -------
+        Tuple[np.ndarray, Dict[str, np.ndarray]]
+            A tuple of outputs, including
+            * A numpy array of coarseness values at different positions within
+            the input image;
+            * A dictionary of arrays during the calculation of coarseness.
+        """
 
         A_all_k = np.zeros(((k_max, image.shape[0], image.shape[1])))
         E_h_all_k = np.zeros(((k_max, image.shape[0], image.shape[1])))
