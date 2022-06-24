@@ -249,9 +249,16 @@ def extract_texture_features_this_image(
     # texture - perception
     if FLAG_PERCEPTION_FEATURES:
 
-        (S, coarseness) = perception.calculate_coarseness(image_array)
+        (coarseness_arrays, S, coarseness) = perception.calculate_coarseness(
+            image=image_array, mask=tissue_mask_array
+        )
 
-        contrast = perception.calculate_contrast(image_array)
+        perception_contrast_features_output = perception.calculate_contrast(
+            image=image_array, mask=tissue_mask_array
+        )
+        contrast = perception_contrast_features_output["Contrast"]
+        perception_std = perception_contrast_features_output["_std"]
+        perception_kur = perception_contrast_features_output["_kurtosis"]
 
         # temporary code for saving outputs - need to save some heat maps as well
         perception_features_output = pd.DataFrame(
@@ -259,6 +266,8 @@ def extract_texture_features_this_image(
             data=[
                 ("perception_coarseness", coarseness),
                 ("perception_contrast", contrast),
+                ("perception_std", perception_std),
+                ("perception_kurtosis", perception_kur),
             ],
         )
 
