@@ -603,13 +603,13 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
                     )
                 )
 
-        summary = pd.DataFrame(columns=summary_cols, data=summary_rows)
+    summary = pd.DataFrame(columns=summary_cols, data=summary_rows)
 
-        output_directory = os.path.join(main_output_directory, slide)
-        os.makedirs(output_directory, exist_ok=True)
+    output_directory = os.path.join(main_output_directory, slide)
+    os.makedirs(output_directory, exist_ok=True)
 
-        summary.to_csv(
-            os.path.join(output_directory, f"{slide}_summary_of_tumour_percentage.csv")
-        )
+    summary.to_csv(
+        os.path.join(output_directory, f"{slide}_summary_of_tumour_percentage.csv")
+    )
 
-        return summary
+    return summary
