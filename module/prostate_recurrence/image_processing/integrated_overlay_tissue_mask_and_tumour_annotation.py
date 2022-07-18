@@ -249,13 +249,15 @@ def stitch_da_tiles(
 
 def process_tumour_annotation(
     slide_information,
-    scene_information_dataframe_complete,
     dict_annotation_binary_image_arrays,
+    tile_size=2000,
+    downscale_factor=0.125,
 ):
     stitch_downscaled_annotation_binary = stitch_da_tiles(
         slide_information=slide_information,
-        scene_information=scene_information_dataframe_complete,
         dict_image_arrays=dict_annotation_binary_image_arrays,
+        tile_size=tile_size,
+        downscale_factor=downscale_factor,
     )
     plt.imshow(stitch_downscaled_annotation_binary, cmap=plt.cm.Greys)
 

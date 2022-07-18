@@ -127,7 +127,9 @@ MODULE_PATH = args.module_path
 if MODULE_PATH not in sys.path:
     sys.path.append(MODULE_PATH)
 
-from image_processing import integrated_overlay_tissue_mask_and_tumour_annotation
+from prostate_recurrence.image_processing import (
+    integrated_overlay_tissue_mask_and_tumour_annotation,
+)
 
 if __name__ == "__main__":
     all_slides_with_tumour_annotation = [
@@ -186,8 +188,9 @@ if __name__ == "__main__":
         )
         stitch_downscaled_annotation_binary = integrated_overlay_tissue_mask_and_tumour_annotation.process_tumour_annotation(
             slide_information=slide_information,
-            scene_information_dataframe_complete=scene_information_dataframe_complete,
             dict_annotation_binary_image_arrays=dict_annotation_binary_image_arrays,
+            tile_size=TILE_SIZE,
+            downscale_factor=DOWNSCALE_FACTOR,
         )
 
         # process tissue mask
