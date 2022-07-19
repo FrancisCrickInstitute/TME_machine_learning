@@ -75,6 +75,13 @@ parser.add_argument(
     help="provide the number of pixels for tile size.",
 )
 parser.add_argument(
+    "--directory_to_tumour_annotation",
+    dest="directory_to_tumour_annotation",
+    action="store",
+    type=str,
+    help="Need to be provided",
+)
+parser.add_argument(
     "--directory_to_cell_annotation",
     dest="directory_to_cell_annotation",
     action="store",
@@ -120,6 +127,7 @@ RAW_DATA_PATH = args.raw_data_path
 RAW_DATA_TYPE = args.raw_data_type
 PROCESSED_DATA_PATH = args.processed_data_path
 RAW_DATA_RES = args.raw_data_res
+DIR_TUMOUR_ANNOTATION = args.directory_to_tumour_annotation
 DIR_CELL_ANNOTATION = args.directory_to_cell_annotation
 
 MASK_RES = args.mask_res
@@ -139,15 +147,23 @@ from prostate_recurrence.image_processing import (
 )
 
 if __name__ == "__main__":
-    all_slides_with_cell_annotation = [
-        "_".join(os.path.basename(slide_csv).split("_")[:2])
-        for slide_csv in natsorted(glob(os.path.join(DIR_CELL_ANNOTATION, "*csv")))
+    # all_slides_with_cell_annotation = [
+    #     "_".join(os.path.basename(slide_csv).split("_")[:2])
+    #     for slide_csv in natsorted(glob(os.path.join(DIR_CELL_ANNOTATION, "*csv")))
+    # ]
+    # print(all_slides_with_cell_annotation)
+
+    all_slides_with_tumour_annotation = [
+        "_".join(os.path.basename(slide_czi).split("_")[:2])
+        for slide_czi in natsorted(
+            glob(os.path.join(DIR_TUMOUR_ANNOTATION, "AnnotatedTiles/*czi"))
+        )
     ]
-    print(all_slides_with_cell_annotation)
+    print(all_slides_with_tumour_annotation)
 
     logstr = "===== DECONV PSR + CELL ANNOTATION =====\n"
 
-    for slide in all_slides_with_cell_annotation:
+    for slide in all_slides_with_tumour_annotation:
         now = datetime.now()
         date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
         logstr += f"> processing: {slide} at {date_time}\n"
