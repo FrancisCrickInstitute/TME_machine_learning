@@ -453,9 +453,9 @@ def overlay_tumour_annotation_with_tissue_mask(
     plt.savefig(
         os.path.join(
             output_directory,
-            f"{slide}_stitched_binary_tumour_annotation_with_tissue_mask.jpg",
+            f"{slide}_stitched_binary_tumour_annotation_with_tissue_mask.pdf",
         ),
-        dpi=300,
+        dpi=600,
     )
 
     plt.show()
