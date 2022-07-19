@@ -161,7 +161,9 @@ if __name__ == "__main__":
             "tile_size_2000/whole_slide/PSR/deconvolutions",
         )
         # cell annotation
-        path_to_cell_annotation = f"/Volumes/lab-sahaie/working/Hanyun/tx_PSR/PSR-H-PROSTATE/csv_WSI/CellPos/{slide}_PSR_cellPos.csv"
+        path_to_cell_annotation = os.path.join(
+            DIR_CELL_ANNOTATION, f"{slide}_PSR_cellPos.csv"
+        )
 
         # get image information
         (
