@@ -613,3 +613,107 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
     )
 
     return summary
+
+
+def read_deconv_psr(
+    directory_to_deconv_psr_tiles, tile_size=2000, downscale_factor=0.125
+):
+    tile_size_downscaled = int(tile_size * downscale_factor)
+
+    directory_to_deconv_psr_tiles_scene_subdirs = natsorted(
+        glob(os.path.join(directory_to_deconv_psr_tiles, "ScanRegion*"))
+    )
+    scene_names = [
+        os.path.basename(subdir)
+        for subdir in directory_to_deconv_psr_tiles_scene_subdirs
+    ]
+
+    # print("loading tissue mask image tiles")
+    subsubdir_deconv_psr = "/psr/inverted_grayscale_tissue_masked/"
+    deconv_psr_image_tile_name_pattern = "image_tile*"
+    dict_deconv_psr_tiles_scene_level = {}
+
+    for scene, subdir in zip(scene_names, directory_to_deconv_psr_tiles_scene_subdirs):
+        print(scene, subdir)
+        paths_to_deconv_psr_image_tiles = natsorted(
+            glob(
+                os.path.join(
+                    subdir + subsubdir_deconv_psr, deconv_psr_image_tile_name_pattern
+                )
+            )
+        )
+        #         print(paths_to_deconv_psr_image_tiles)
+
+        image_tile_names = [
+            os.path.splitext(os.path.basename(path))[0]
+            for path in paths_to_deconv_psr_image_tiles
+        ]
+
+        deconv_psr_image_arrays = {
+            image_tile_name: np.array(
+                Image.open(path).resize((tile_size_downscaled, tile_size_downscaled))
+            )
+            for image_tile_name, path in zip(
+                image_tile_names, paths_to_deconv_psr_image_tiles
+            )
+        }
+        dict_deconv_psr_tiles_scene_level[scene] = deconv_psr_image_arrays
+
+    return dict_deconv_psr_tiles_scene_level
+
+
+def read_cell_annotation_wsi(
+    path_to_cell_annotation_wsi,
+):
+    cell_annotation_wsi = pd.read_csv(path_to_cell_annotation_wsi)
+    return cell_annotation_wsi
+
+
+def overlay_deconv_psr_with_cell_annotation(
+    stitch_downscaled_deconv_psr,
+    cell_annotation_wsi,
+    main_output_directory,
+    slide,
+    downscale_factor_ecm_to_cells=0.25,
+):
+    colormap = {
+        "leukocytes": "blue",
+        "cancer": "green",
+        "normal": "yellow",
+        "blood": "red",
+        "fibroblast": "magenta",
+        "others": "white",
+        "necrosis": "brown",
+    }
+
+    fig, axes = plt.subplots()
+
+    # plot deconvolved psr
+    axes.imshow(stitch_downscaled_deconv_psr, cmap=plt.cm.Greys, zorder=1)
+
+    # plot cell annotation
+    cell_types = cell_annotation_wsi["class"].unique()
+    for ctype in cell_types:
+        axes.scatter(
+            x=cell_annotation_wsi.loc[cell_annotation_wsi["class"] == ctype].x
+            / downscale_factor_ecm_to_cells,
+            y=cell_annotation_wsi.loc[cell_annotation_wsi["class"] == ctype].y
+            / downscale_factor_ecm_to_cells,
+            c=colormap[ctype],
+            edgecolor="none",
+            s=0.1,
+            zorder=2,
+        )
+    #     axes.set_ylim(axes.get_ylim()[::-1])
+    axes.legend(cell_types, loc="upper right", fontsize="xx-small", markerscale=4)
+
+    output_directory = os.path.join(main_output_directory, slide)
+    os.makedirs(output_directory, exist_ok=True)
+
+    plt.savefig(
+        os.path.join(
+            output_directory,
+            f"{slide}_stitched_deconvolved_psr_with_cell_annotation.pdf",
+        ),
+        dpi=600,
+    )
