@@ -163,7 +163,7 @@ if __name__ == "__main__":
             DIR_TUMOUR_ANNOTATION, f"freehandlabels_png/{slide}_PSR.czi/"
         )
         input_directories = {
-            "input_directory_annotation_overlay": input_directory_annotation_overlay,
+            # "input_directory_annotation_overlay": input_directory_annotation_overlay, # this is not yet available for data on CAMP
             "input_directory_annotation_binary": input_directory_annotation_binary,
         }
         image_tile_name_pattern = "Da*"

@@ -147,50 +147,63 @@ def read_tumour_annotation(
 ):
     tile_size_downscaled = int(tile_size * downscale_factor)
 
-    input_directory_annotation_overlay = input_directories[
-        "input_directory_annotation_overlay"
-    ]
-    input_directory_annotation_binary = input_directories[
-        "input_directory_annotation_binary"
-    ]
-
-    paths_to_annotation_overlay_image_tiles = natsorted(
-        glob(os.path.join(input_directory_annotation_overlay, image_tile_name_pattern))
-    )
-    annotation_overlay_image_arrays = [
-        np.array(Image.open(path).resize((tile_size_downscaled, tile_size_downscaled)))
-        for path in paths_to_annotation_overlay_image_tiles
-    ]
-
-    paths_to_annotation_binary_image_tiles = natsorted(
-        glob(os.path.join(input_directory_annotation_binary, image_tile_name_pattern))
-    )
-    annotation_binary_image_arrays = [
-        np.array(
-            ImageOps.grayscale(Image.open(path)).resize(
-                (tile_size_downscaled, tile_size_downscaled)
+    # overlay of tumour contour on raw PSR+H
+    if "input_directory_annotation_overlay" in input_directories.keys():
+        input_directory_annotation_overlay = input_directories[
+            "input_directory_annotation_overlay"
+        ]
+        paths_to_annotation_overlay_image_tiles = natsorted(
+            glob(
+                os.path.join(
+                    input_directory_annotation_overlay, image_tile_name_pattern
+                )
             )
         )
-        for path in paths_to_annotation_binary_image_tiles
-    ]
+        annotation_overlay_image_arrays = [
+            np.array(
+                Image.open(path).resize((tile_size_downscaled, tile_size_downscaled))
+            )
+            for path in paths_to_annotation_overlay_image_tiles
+        ]
+        dict_annotation_overlay_image_arrays = {
+            os.path.splitext(os.path.basename(path))[0]: image_array
+            for path, image_array in zip(
+                paths_to_annotation_overlay_image_tiles, annotation_overlay_image_arrays
+            )
+        }
+        da_names = dict_annotation_overlay_image_arrays.keys()
+        print(da_names)
+    else:
+        dict_annotation_overlay_image_arrays = {}
 
-    dict_annotation_overlay_image_arrays = {
-        os.path.splitext(os.path.basename(path))[0]: image_array
-        for path, image_array in zip(
-            paths_to_annotation_overlay_image_tiles, annotation_overlay_image_arrays
+    # binary tumour mask
+    if "input_directory_annotation_binary" in input_directories.keys():
+        input_directory_annotation_binary = input_directories[
+            "input_directory_annotation_binary"
+        ]
+        paths_to_annotation_binary_image_tiles = natsorted(
+            glob(
+                os.path.join(input_directory_annotation_binary, image_tile_name_pattern)
+            )
         )
-    }
-    da_names = dict_annotation_overlay_image_arrays.keys()
-    # print(da_names)
-
-    dict_annotation_binary_image_arrays = {
-        os.path.splitext(os.path.basename(path))[0]: image_array
-        for path, image_array in zip(
-            paths_to_annotation_binary_image_tiles, annotation_binary_image_arrays
-        )
-    }
-    da_names = dict_annotation_binary_image_arrays.keys()
-    # print(da_names)
+        annotation_binary_image_arrays = [
+            np.array(
+                ImageOps.grayscale(Image.open(path)).resize(
+                    (tile_size_downscaled, tile_size_downscaled)
+                )
+            )
+            for path in paths_to_annotation_binary_image_tiles
+        ]
+        dict_annotation_binary_image_arrays = {
+            os.path.splitext(os.path.basename(path))[0]: image_array
+            for path, image_array in zip(
+                paths_to_annotation_binary_image_tiles, annotation_binary_image_arrays
+            )
+        }
+        da_names = dict_annotation_binary_image_arrays.keys()
+        print(da_names)
+    else:
+        dict_annotation_binary_image_arrays = {}
 
     return dict_annotation_overlay_image_arrays, dict_annotation_binary_image_arrays
 
