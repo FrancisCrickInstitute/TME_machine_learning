@@ -57,7 +57,14 @@ parser.add_argument(
     default="",
     help="provide the path saving image data.",
 )
-
+parser.add_argument(
+    "--image_filename_start",
+    dest="image_filename_start",
+    action="store",
+    type=str,
+    default="LTX001",
+    help="provide the start of image filenames.",
+)
 parser.add_argument(
     "--output_directory",
     dest="output_directory",
@@ -70,6 +77,7 @@ parser.add_argument(
 args = parser.parse_args()
 LOGFILE_PATH = args.logfile_path
 IMAGE_DATA_PATH = args.image_data_path
+IMAGE_FILENAME_START = args.image_filename_start
 OUTPUT_DIRECTORY = args.output_directory
 
 FLAG_INTENSITY_FEATURES = args.flag_intensity_features
@@ -209,7 +217,7 @@ def extract_texture_features_this_image(path_to_valid_image_tile):
 if __name__ == "__main__":
 
     paths_to_valid_image_tiles = natsorted(
-        glob(os.path.join(IMAGE_DATA_PATH, "LTX*.tif"))
+        glob(os.path.join(IMAGE_DATA_PATH, f"{IMAGE_FILENAME_START}*.tif"))
     )
 
     logstr = "===== EXTRACTION OF TEXTURE FEATURES (lung tda rois) =====\n"
@@ -222,7 +230,7 @@ if __name__ == "__main__":
         now = datetime.now()
         date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
         logstr += (
-            f"{k+1} / {{len(paths_to_valid_image_tiles)} data paths}\n"
+            f"{k+1} / {len(paths_to_valid_image_tiles)} data paths\n"
             f"... image tile {path_to_valid_image_tile}; finished at {date_time}\n"
         )
         logstr += "\n"
