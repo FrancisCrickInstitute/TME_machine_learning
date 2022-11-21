@@ -2,10 +2,8 @@
 
 ## read_image(...) to read whole slide image using czifile library.
 This function expects the full absolute path to a .czi image image and a valid
-tiling method as input parameters. Currently, the only tiling method implemented
-is using czifile library. Note that an issue remains that not all Python versions
-are compatible with czifile. Python 3.7.x was used to succesfully generate image tiles.
-This function returns a numpy array of the whole slide image.
+tiling method as input parameters. Implemented reading methods include 'czifile' 
+and 'aicsimageio'.
 
 ## create_tiles(...) to create image tiles based on the whole slide image.
 This function expects a numpy array of the whole slide image and a user-defined
