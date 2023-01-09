@@ -67,6 +67,7 @@ counter=0;
 label_matrix = zeros(padded_size);
 radius_label_matrix = zeros(padded_size);
 while isempty(radius_vector)==0
+    length(radius_vector)
     counter=counter+1;
     
     max_radius_index=find(radius_vector==max(radius_vector));
@@ -78,44 +79,55 @@ while isempty(radius_vector)==0
     
     
     circle_radius_float = radius_vector(random_circle_index);
-    radius = circle_radius_float-1;
-    upper_radius = ceil(radius);
-    lower_radius = floor(radius);
-    
-    %For non-integer distances we first check whether the rounded value to 
-    %positive infinity overlaps with foreground. If is does we then take
-    %the rounded value to negative infinity as radius.
-    if upper_radius~=lower_radius
-        radius = upper_radius;
-        circlePixels = circle_function(rows,row_mid,cols,col_mid,radius);
-        %circlePixels = (rows - row_mid).^2 + (cols - col_mid).^2 <= radius.^2;
-        if max(bw_analyse(circlePixels))==1
-           radius = lower_radius;
-           circlePixels = ...
-               circle_function(rows,row_mid,cols,col_mid,radius);
-        end
+    radius = circle_radius_float-1
+    if radius == 0 && minimum_radius == 0
+        max_label_matrix = max(label_matrix(:),[],'all','omitnan');
+        label_matrix(radius_index_vector) = max_label_matrix+1:max_label_matrix+length(radius_index_vector);
+        radius_label_matrix(radius_index_vector) =  0.5;
+        circle_radius(end+1:end+length(radius_index_vector))=0.5;
+        %Needs to be edited for col and rows
+        break
     else
-        circlePixels = ...
-            circle_function(rows,row_mid,cols,col_mid,radius);
+    length(radius_vector)
+        upper_radius = ceil(radius);
+        lower_radius = floor(radius);
+        
+        %For non-integer distances we first check whether the rounded value to 
+        %positive infinity overlaps with foreground. If is does we then take
+        %the rounded value to negative infinity as radius.
+        
+        if upper_radius~=lower_radius
+            radius = upper_radius;
+            circlePixels = circle_function(rows,row_mid,cols,col_mid,radius);
+            %circlePixels = (rows - row_mid).^2 + (cols - col_mid).^2 <= radius.^2;
+            if max(bw_analyse(circlePixels))==1
+               radius = lower_radius;
+               circlePixels = ...
+                   circle_function(rows,row_mid,cols,col_mid,radius);
+            end
+        else
+            circlePixels = ...
+                circle_function(rows,row_mid,cols,col_mid,radius);
+        end
+        bw_analyse(circlePixels)=1;
+        centroid_row(counter)=row_mid;
+        centroid_col(counter)=col_mid;
+        circle_radius(counter)=radius+0.5; %Added 0.5 to account for a single pixel having radius 0.5
+        %Should we take the discrete or continuous version of this?
+        label_matrix(circlePixels) = counter;
+        radius_label_matrix(circlePixels) = radius + 0.5;
+        [...
+        irows,...
+        icols,...
+        bw_analyse,...
+        distance_matrix,...
+        radius_matrix,...
+        radius_vector,...
+        radius_index_vector,...
+        total_circles...
+        ] = gap_distance_function(bw_analyse,minimum_radius);
+        %proportioncomplete=1-length(radius_vector)/(irows*icols)%Timer
     end
-    bw_analyse(circlePixels)=1;
-    centroid_row(counter)=row_mid;
-    centroid_col(counter)=col_mid;
-    circle_radius(counter)=radius+0.5; %Added 0.5 to account for a single pixel having radius 0.5
-    %Should we take the discrete or continuous version of this?
-    label_matrix(circlePixels) = counter;
-    radius_label_matrix(circlePixels) = radius + 0.5;
-    [...
-    irows,...
-    icols,...
-    bw_analyse,...
-    distance_matrix,...
-    radius_matrix,...
-    radius_vector,...
-    radius_index_vector,...
-    total_circles...
-    ] = gap_distance_function(bw_analyse,minimum_radius);
-    %proportioncomplete=1-length(radius_vector)/(irows*icols)%Timer
 end
 
 %Output data updated to account for original padding.

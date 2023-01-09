@@ -114,60 +114,36 @@ neighbours(index_neighbours) = circle_radius(labels);
 
 %Find distance between centroids and boundaries of all gaps over a radius
 %given in radii_vector
+sorted_circle_radius = sort(circle_radius,'descend');
 for r=1:length(radii_vector)
     radius_distance_threshold = radii_vector(r);
     index = find(circle_radius>=radius_distance_threshold);
+    if length(index)<5
+        index = find(circle_radius>=sorted_circle_radius(min(5,length(sorted_circle_radius))));    
+    end
     if length(index)>1
         neighbour_x = centroid_col(index);
         neighbour_y = centroid_row(index);
         centroid_coords=[neighbour_x',neighbour_y'];
         variable_radius(r).centroid_distance = pdist(centroid_coords);
-    
-        threshold_gap_bw=radius_label_matrix>radius_distance_threshold;
-        label_radius_threshold = label_matrix;
-        label_radius_threshold(~threshold_gap_bw)=0;
-        unique_label_radius_threshold = unique(label_radius_threshold);
-        unique_label_radius_threshold = ...
-            unique_label_radius_threshold(unique_label_radius_threshold>0);
-        
-        counter=0;
-        for I=1:length(unique_label_radius_threshold)-1
-            label_id=unique_label_radius_threshold(I);
-            single_gap1 = zeros(size(label_radius_threshold));
-            index=find(label_radius_threshold==label_id);
-            single_gap1(index)=1;
-            single_gap1 = bwmorph(single_gap1,'remove');
-            [row1,col1] = ind2sub(size(single_gap1),find(single_gap1));
-            for J=I+1:length(unique_label_radius_threshold)
-                counter=counter+1;
-                label_id=unique_label_radius_threshold(J);
-                single_gap2 = zeros(size(label_radius_threshold));
-                index=find(label_radius_threshold==label_id);
-                single_gap2(index)=1;
-                single_gap2 = bwmorph(single_gap2,'remove');
-                [row2,col2] = ind2sub(size(single_gap2),find(single_gap2));
-                gap_distances = pdist2([row1,col1],[row2,col2]);
-                whole_circle_distance(counter) = min(gap_distances(:));
-            end
-        end
-        variable_radius(r).boundary_distance = whole_circle_distance;
     else
         variable_radius(r).centroid_distance = NaN;
-        variable_radius(r).boundary_distance = NaN;
     end
 
-    %Record shape statistics for gap shapes
-    L = bwlabel(~bw,8);
-    inverted_bw_stats = regionprops(...
-        'table',...
-        L,...
-        'Area',...
-        'Circularity',...
-        'Eccentricity',...
-        'EulerNumber',...
-        'Extent',...
-        'MajorAxisLength',...
-        'MinorAxisLength',...
-        'Perimeter'...
-        );
+
+end
+%Record shape statistics for gap shapes
+L = bwlabel(~bw,8);
+inverted_bw_stats = regionprops(...
+    'table',...
+    L,...
+    'Area',...
+    'Circularity',...
+    'Eccentricity',...
+    'EulerNumber',...
+    'Extent',...
+    'MajorAxisLength',...
+    'MinorAxisLength',...
+    'Perimeter'...
+    );
 end
