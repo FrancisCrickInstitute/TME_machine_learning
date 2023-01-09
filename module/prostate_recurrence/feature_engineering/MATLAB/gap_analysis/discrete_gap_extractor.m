@@ -1,5 +1,47 @@
 function discrete_gap_labels = discrete_gap_extractor(ecm_mask,tissue_mask,image)
 
+%DISCRETE_GAP_LABELS generates labels processes the ecm mask to identify 
+% discrete gaps and then labels them.
+%
+% discrete_gap_labels = discrete_gap_extractor(ecm_mask,tissue_mask,image)
+% attempts to determine discrete gap objects in a binary collagen image.
+% It does this by generating a primitive label of all discrete gaps prior 
+% to any processing. It also processes ecm_mask with various morphological 
+% operations to more robust discrete gaps that reduce leakiness. These are 
+% then processed alongside the primitive labels ising distance transforms 
+% to ascertain the most plausible discrete gaps. Image closing is carried 
+% out to close leaky openings between separate gaps. More aggressive 
+% closing is carried out on the image boundary and for very large discrete 
+% objects as these suffer more more leakiness between separate gaps. This 
+% generates an image where the gaps are significantly more closed off from 
+% each other. The morphologically processed image is compared to the 
+% primitive object labelling of the ecm_mask using distance transforms so 
+% that the processing does not destroy any small gaps and the primitive 
+% gaps are relabelled according to the closest processed gap.      
+% 
+%
+%   Input:
+%   ecm_mask: Logical mask showing where collagen structure is
+%   located.
+%   tissue_mask: Logical mask showing where the tissue structure is
+%   located.
+%   image: input greyscale decolvolved image of collegen structure.
+%
+%   Output:
+%   discrete_gap_labels: Labelled image identifying each discrete gap with 
+%   a separate numerical label.
+%
+%
+%   Class support for input ecm_mask,tissue_mask::
+%      logical
+%   Class support for image 
+%      unsigned integer
+%
+%   This work is licensed under a Creative Commons Attribution 4.0 
+%   International License.
+
+
+
 
 tissue_boundary = bwmorph(tissue_mask,'remove');
 SE = strel('disk',10,0);
