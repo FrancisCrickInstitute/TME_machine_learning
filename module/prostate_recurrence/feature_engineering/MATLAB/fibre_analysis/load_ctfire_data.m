@@ -1,13 +1,24 @@
 function [ctfire_fibres,fibre_matrix,discrete_fibres] = ...
-    load_ctfire_data(ctfire_file,image_file,minimum_fibre_length,row_minimum,row_maximum,column_minimum,column_maximum)
+    load_ctfire_data(ctfire_file,...
+    image_file,...
+    minimum_fibre_length,...
+    row_minimum,...
+    row_maximum,...
+    column_minimum,...
+    column_maximum)
 %LOAD_CTFIRE_DATA Load and transform CTFire output fibre data
 %
 %   [ctfire_fibres fibre_matrix discrete_fibres] = 
-%   load_ctfire_data(ctfire_file,image_file,minimum_fibre_length) loads
+%   load_ctfire_data(ctfire_file,image_file,minimum_fibre_length,
+%   row_minimum,row_maximum,column_minimum,column_maximum) loads
 %   fibre level information from the CT-Fire output, creates connected
 %   object fibres from the discontinuous CTFire fibre points and outputs
-%   the data in a matrix the same size as the tile and as a structure array
-%   underlying function V=F(X) at the query points Xq. 
+%   the data in a matrix the same size as the tile and as a structure 
+%   array. Only fibres in a subregion given by the row and column mimimums 
+%   and maximums are considered and the output data translated to fit on a 
+%   tile of row size row_maximum - row_minimum + 1 and equivalent for 
+%   columns is considered. This allows processing of both the original tile
+%   and sub-quadrants.
 %
 %   Input:
 %   ctfire_file: CTFire output file. 
@@ -15,6 +26,11 @@ function [ctfire_fibres,fibre_matrix,discrete_fibres] = ...
 %   minimum_fibre_length: a single value that gives the minimum pixel 
 %   length fibre included in the fibre output. Lengths of each fibre 
 %   are given in CTFire output
+%   row_minimum: Minimum row to consider fibres in (used to define whther
+%   processing a full tile or suquadrant).
+%   row_maximum: Maximum row to consider fibres in.
+%   column_minimum: Minimum column to consider fibres in.
+%   column_maximum: Maximum column to consider fibres in.
 %
 %   Output:
 %   ctfire_fibres: a structure array with x and y coordinates of each fibre
@@ -37,7 +53,9 @@ function [ctfire_fibres,fibre_matrix,discrete_fibres] = ...
 %      string: string
 %   Class support for input minimum_fibre_length:
 %      float: single, double, int: uint8, uint16, uint64
-%   
+%   Class support for row_minimum, row_maximum, column_minimum, 
+%   column_maximum:
+%      float: single, double, int: uint8, uint16, uint64
 %
 %   This work is licensed under a Creative Commons Attribution 4.0 
 %   International License.
