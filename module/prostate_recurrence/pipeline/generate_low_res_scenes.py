@@ -4,11 +4,13 @@ import sys
 from glob import glob
 from typing import Dict, Tuple
 
-import bioformats
+import javabridge, bioformats
 import numpy as np
 import pandas as pd
 from natsort import natsorted
 from PIL import Image, ImageOps
+
+javabridge.start_vm(class_path=bioformats.JARS)
 
 parser = argparse.ArgumentParser(prog="tme-ml-raw-data")
 parser.add_argument(
