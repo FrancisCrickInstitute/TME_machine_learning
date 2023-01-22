@@ -208,7 +208,7 @@ if __name__ == "__main__":
         MASK_RES_0 = "5.0x"
 
     all_paths_to_data = natsorted(
-        glob(os.path.join(RAW_DATA_PATH, f"*{RAW_DATA_TYPE}.czi"))
+        glob(os.path.join(RAW_DATA_PATH, f"*{RAW_DATA_TYPE}_20X.czi"))
     )
     for path in all_paths_to_data:
         print(f"> processing path : {path}")
