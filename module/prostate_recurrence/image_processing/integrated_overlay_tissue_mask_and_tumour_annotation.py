@@ -488,7 +488,7 @@ def overlay_tumour_annotation_with_tissue_mask(
 def get_subtile_tumour_information(
     slide, scene, irow, icol, image_tile_name, image_tile, summary_subtile_rows
 ):
-    subtile_size = image_tile // 2
+    subtile_size = image_tile.shape[0] // 2
     for subtile_row in range(2):
         for subtile_col in range(2):
             image_subtile_name = (
