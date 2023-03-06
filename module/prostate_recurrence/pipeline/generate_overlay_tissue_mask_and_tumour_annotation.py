@@ -219,7 +219,7 @@ if __name__ == "__main__":
         )
 
         # summarise tiles of the overlay
-        summary = integrated_overlay_tissue_mask_and_tumour_annotation.tiles_of_overlay_tumour_annotation_with_tissue_mask(
+        summary, summary_subtile = integrated_overlay_tissue_mask_and_tumour_annotation.tiles_of_overlay_tumour_annotation_with_tissue_mask(
             slide_information=slide_information,
             scene_information_dataframe_complete=scene_information_dataframe_complete,
             stitch_downscaled_annotation_overlay_with_tissue_mask=stitch_downscaled_annotation_overlay_with_tissue_mask,
