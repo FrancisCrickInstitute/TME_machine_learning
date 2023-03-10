@@ -131,9 +131,7 @@ if __name__ == "__main__":
         date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
         logstr += f"> processing: {path} at {date_time}\n"
         print(f"> processing path : {path}")
-        slide_id = "_".join(
-            [os.path.basename(path).split("_")[0], os.path.basename(path).split("_")[1]]
-        )
+        slide_id = os.path.basename(path).split("_")[0][:6]
 
         output_directory_processed_tissue_mask_tiles = os.path.join(
             PROCESSED_DATA_PATH,
