@@ -1,3 +1,9 @@
+"""
+    This script processes Lung TDA ROIs
+    No tissue mask tiles are used for analysis
+    Subtile analysis is not performed
+"""
+
 import argparse
 import os
 import sys
