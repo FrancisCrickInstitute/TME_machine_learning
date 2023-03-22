@@ -230,6 +230,6 @@ def save_histogram_features(
         data_frame = pd.DataFrame(columns=columns, data=data_rows)
         data_frame.to_csv(os.path.join(output_directory, file_name), index=False)
 
-    save_histogram_as_image()
-    save_histogram_as_array()
+    # save_histogram_as_image()
+    # save_histogram_as_array()
     save_histogram_features_as_csv()

@@ -260,6 +260,6 @@ def save_glcm_features(
         data_frame = pd.DataFrame(columns=columns, data=data_rows)
         data_frame.to_csv(os.path.join(output_directory, file_name), index=False)
 
-    save_glcm_as_image()
-    save_glcm_as_array()
+    # save_glcm_as_image()
+    # save_glcm_as_array()
     save_glcm_features_as_csv()
