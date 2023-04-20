@@ -156,14 +156,10 @@ if __name__ == "__main__":
             "tile_size_2000/whole_slide/PSR/tissue_masks/tissue_mask_v2",
         )
         # tumour annotation
-        input_directory_annotation_overlay = os.path.join(
-            DIR_TUMOUR_ANNOTATION, f"AnnotatedTiles/{slide}_PSR.czi/"
-        )
         input_directory_annotation_binary = os.path.join(
-            DIR_TUMOUR_ANNOTATION, f"freehandlabels_png/{slide}_PSR.czi/"
+            DIR_TUMOUR_ANNOTATION, f"{slide}_PSR.czi/"
         )
         input_directories = {
-            # "input_directory_annotation_overlay": input_directory_annotation_overlay, # this is not yet available for data on CAMP
             "input_directory_annotation_binary": input_directory_annotation_binary,
         }
         image_tile_name_pattern = "Da*"
@@ -219,7 +215,10 @@ if __name__ == "__main__":
         )
 
         # summarise tiles of the overlay
-        summary, summary_subtile = integrated_overlay_tissue_mask_and_tumour_annotation.tiles_of_overlay_tumour_annotation_with_tissue_mask(
+        (
+            summary,
+            summary_subtile,
+        ) = integrated_overlay_tissue_mask_and_tumour_annotation.tiles_of_overlay_tumour_annotation_with_tissue_mask(
             slide_information=slide_information,
             scene_information_dataframe_complete=scene_information_dataframe_complete,
             stitch_downscaled_annotation_overlay_with_tissue_mask=stitch_downscaled_annotation_overlay_with_tissue_mask,
