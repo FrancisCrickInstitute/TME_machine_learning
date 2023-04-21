@@ -134,9 +134,7 @@ from prostate_recurrence.image_processing import (
 if __name__ == "__main__":
     all_slides_with_tumour_annotation = [
         "_".join(os.path.basename(slide_czi).split("_")[:2])
-        for slide_czi in natsorted(
-            glob(os.path.join(DIR_TUMOUR_ANNOTATION, "freehandlabels_png/*czi"))
-        )
+        for slide_czi in natsorted(glob(os.path.join(DIR_TUMOUR_ANNOTATION, "*czi")))
     ]
     print(all_slides_with_tumour_annotation)
 
