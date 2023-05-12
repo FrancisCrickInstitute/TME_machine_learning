@@ -223,8 +223,9 @@ def extract_texture_features_this_image(path_to_valid_image_tile):
 if __name__ == "__main__":
 
     paths_to_valid_image_tiles = natsorted(
-        glob(os.path.join(IMAGE_DATA_PATH, f"{IMAGE_FILENAME_START}*.tif"))
+        glob(os.path.join(IMAGE_DATA_PATH, f"**/{IMAGE_FILENAME_START}*.tif"), recursive=True)
     )
+    print(paths_to_valid_image_tiles)
 
     logstr = "===== EXTRACTION OF TEXTURE FEATURES (lung tda rois) =====\n"
 
