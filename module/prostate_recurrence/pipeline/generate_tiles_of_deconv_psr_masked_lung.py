@@ -1,6 +1,11 @@
-"""# a set of functions for generating tiles of deconvolved PSR tissue masked
+"""# This script generates tiles of tissue masked deconolved PSR image in Lung
 
-## input images are tiles of deconvolved PSR and tiles of tissue mask for LUNG 
+User needs to make sure that deconvolved PSR image tile (from colour deconvolution) and
+matched binary tissue mask tile (from tiling of scene-level downscaled binary tissue masks)
+are available for this script to work.
+
+Iteratively, for each slide; for each scene; for each tile, deconvolved PSR image and
+binary tissue mask image are multiplied by calling np.multiply(...)
 
 """
 
