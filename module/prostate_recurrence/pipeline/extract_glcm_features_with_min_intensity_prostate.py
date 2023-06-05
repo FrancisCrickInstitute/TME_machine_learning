@@ -208,6 +208,12 @@ if __name__ == "__main__":
                     )
                 )
 
+                if not (
+                    os.path.exists(path_to_valid_image_tile)
+                    and os.path.exists(path_to_corresponding_tissue_mask_tile)
+                ):
+                    continue
+
                 extract_glcm_features_this_image(
                     path_to_valid_image_tile=path_to_valid_image_tile,
                     path_to_image_tile_texture_feature_folder=path_to_image_tile_texture_feature_folder,
