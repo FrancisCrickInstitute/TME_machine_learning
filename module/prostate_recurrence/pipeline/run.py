@@ -389,6 +389,16 @@ def run_colour_deconvolution():
 
 
 def run_validate_psr_image():
+    """perform validation of image tiles (to be deprecated)
+
+    This function calls module in validate_psr_image.py to perform validation of
+    image tiles. Image tiles with too few pixels with a minimum of intensity level
+    are labelled as invalid during this process.
+
+    An alternative and better implementation with a similar intention is available
+    in MATLAB. Therefore, this function is NOT recommended for use.
+
+    """
     print("===== VALIDATE PSR IMAGE =====")
     logstr = "===== VALIDATE PSR IMAGE =====\n"
     do_batch_processing = True
@@ -500,11 +510,12 @@ def run_validate_psr_image():
         logstr = ""
 
 
-# def run_feature_engineering():
-#     pass
-
-
 def run_stitching():
+    """perform re-stitching of image tiles (to be deprecated)
+
+    This functionality is re-implemented elsewhere. Do NOT use.
+
+    """
     print("===== STITCHING =====")
     do_batch_processing = True
     if ".czi" in RAW_DATA_PATH:
@@ -668,7 +679,7 @@ def run_stitching():
                 output_directory_processed_stitching,
                 f"stitched_heatmap_{feature_to_map}.jpg",
             )
-            mask = stitching.visualise_overlay(
+            _ = stitching.visualise_overlay(
                 raw_image=raw_image,
                 file_paths=file_paths_features,
                 position_in_path_has_tile_row_col=-2,
@@ -685,7 +696,7 @@ if FLAG_RUN_TILING:
     run_tiling()
 if FLAG_RUN_COLOUR_DECONVOLUTION:
     run_colour_deconvolution()
-if FLAG_RUN_VALIDATE_PSR_IMAGE:
+if False or FLAG_RUN_VALIDATE_PSR_IMAGE:  # function to be deprecated
     run_validate_psr_image()
-if FLAG_RUN_STITCHING:
+if False or FLAG_RUN_STITCHING:  # function to be deprecated
     run_stitching()
