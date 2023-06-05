@@ -1,4 +1,7 @@
-"""This script contains functions for overlaying tissue mask with tumour annotation 
+"""This script contains functions for overlaying tissue mask with tumour annotation
+
+## read_image_scene_information(...) to obtain the information about image scenes,
+including the relative positions of individual scenes relative to the whole slide.
 
 Inputs
 - tiles containing nonzero tumour areas (ICR tiling system)
@@ -18,14 +21,33 @@ import matplotlib.pyplot as plt
 from PIL import Image, ImageOps
 from glob import glob
 from natsort import natsorted
-from typing import Dict
+from typing import Dict, Tuple
 from aicsimageio import AICSImage
 
 
 def read_image_scene_information(
-    path_to_image,
+    path_to_image: str,
     resolution_micron_per_pixel=0.22,
-):
+) -> Tuple[pd.DataFrame, Dict[str, float]]:
+    """obtain information about scenes in the image
+
+    Function "AICSImage" from the aicsimageio library is used to obtain information
+    about image scenes. Positions of individual scenes relative to the whole slide
+    are obtained via image metadata, i.e., image.metadata
+
+    Parameters
+    ----------
+    path_to_image : str
+        path to the image in a .czi format.
+    resolution_micron_per_pixel : float, optional
+        image resolution in micron per pixel, by default 0.22
+
+    Returns
+    -------
+    Tuple[pd.DataFrame, Dict[str, float]]
+        A dataframe containing information about image scenes.
+        A dictionary of positions of the four corners of the whole slide.
+    """
     image = AICSImage(path_to_image)
 
     # from reading scenes
