@@ -6,8 +6,8 @@ including the relative positions of individual scenes relative to the whole slid
 ## read_tumour_annotation(...) to read tiles of tumour contour line overlay with raw
 PSR+H and tiles of binary tumour mask.
 
-## stitch_da_tiles(...) to stitch tiles of binary tumour mask to whole slide binary
-binary tumour mask in Numpy array.
+## process_tumour_annotation(...) calling stitch_da_tiles(...) to stitch tiles of binary
+tumour mask to whole slide binary tumour mask in Numpy array.
 
 Inputs
 - tiles containing nonzero tumour areas (ICR tiling system)
@@ -332,11 +332,30 @@ def stitch_da_tiles(
 
 
 def process_tumour_annotation(
-    slide_information,
-    dict_annotation_binary_image_arrays,
-    tile_size=2000,
-    downscale_factor=0.125,
-):
+    slide_information: Dict[str, float],
+    dict_annotation_binary_image_arrays: Dict[str, np.ndarray],
+    tile_size: int = 2000,
+    downscale_factor: float = 0.125,
+) -> np.ndarray:
+    """processing the stitching of binary tumour masks
+
+    Parameters
+    ----------
+    slide_information : Dict[str, float]
+        A dictionary of positions of the four corners of the whole slide.
+    dict_annotation_binary_image_arrays : Dict[str, np.ndarray]
+        A dictionary of binary tumour mask tiles. Keys are the tile names according
+        to the ICR tiling system.
+    tile_size : int, optional
+        Width of each image tile in pixels, by default 2000
+    downscale_factor : float, optional
+        Downscaling factor applied when reading in image tiles, by default 0.125
+
+    Returns
+    -------
+    np.ndarray
+        Stitched whole slide binary tumour mask in Numpy array.
+    """
     stitch_downscaled_annotation_binary = stitch_da_tiles(
         slide_information=slide_information,
         dict_image_arrays=dict_annotation_binary_image_arrays,
