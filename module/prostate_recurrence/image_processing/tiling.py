@@ -2,7 +2,7 @@
 
 ## read_image(...) to read whole slide image using czifile library.
 This function expects the full absolute path to a .czi image image and a valid
-tiling method as input parameters. Implemented reading methods include 'czifile' 
+tiling method as input parameters. Implemented reading methods include 'czifile'
 and 'aicsimageio'.
 
 ## create_tiles(...) to create image tiles based on the whole slide image.
@@ -29,7 +29,6 @@ from typing import Dict, Tuple
 
 
 import numpy as np
-import pandas as pd
 from aicsimageio import AICSImage  # pip install AICSImage[czi]
 from czifile import CziFile  # pip install czifile
 from natsort import natsorted
@@ -109,22 +108,22 @@ def read_image_mask(
 
 
 def create_tiles(
-    img: np.array, size: int = 512
-) -> Tuple[Dict[int, np.array], int, int]:
+    img: np.ndarray, size: int = 512
+) -> Tuple[Dict[int, np.ndarray], int, int]:
     """create image tiles with user-defined size
     note: need to add extra functionalities such as option of
     tile overlapping, offsetting, etc
 
     Parameters
     ----------
-    img : np.array
+    img : np.ndarray
         An input whole slide image as Numpy array
     size : int, optional
         Tile size in pixels, by default 512
 
     Returns
     -------
-    Tuple[Dict[int, np.array], int, int]
+    Tuple[Dict[int, np.ndarray], int, int]
         A Tuple of outputs, including a Dictionary of
         [tile id : tile as Numpy array], the number of
         rows and columns of tiles.
@@ -163,7 +162,7 @@ def create_tiles(
 
 
 def save_tiles(
-    dict_img_tiles: Dict[int, np.array],
+    dict_img_tiles: Dict[int, np.ndarray],
     nrow: int,
     ncol: int,
     save_path: str,
@@ -172,11 +171,6 @@ def save_tiles(
     size: int = 512,
 ):
     """save image tiles into user-defined directory
-    note: need to implement options to filter out all the background
-    image tiles, possibly by loading a user-defined background-foreground
-    mask that segments tissue.
-    A temporary solution is used by filering out images with most pixels
-    in colour close to black or white
 
     Parameters
     ----------
