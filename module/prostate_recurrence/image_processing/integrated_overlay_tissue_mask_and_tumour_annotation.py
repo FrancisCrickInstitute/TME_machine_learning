@@ -9,6 +9,9 @@ PSR+H and tiles of binary tumour mask.
 ## process_tumour_annotation(...) calling stitch_da_tiles(...) to stitch tiles of binary
 tumour mask to whole slide binary tumour mask in Numpy array.
 
+## read_tissue_mask(...) to read tiles of binary tumour mask, for individual scenes of the
+whole slide.
+
 Inputs
 - tiles containing nonzero tumour areas (ICR tiling system)
 - tiles containing nonzero tissue areas (Crick tiling system)
@@ -368,8 +371,28 @@ def process_tumour_annotation(
 
 
 def read_tissue_mask(
-    camp_input_directory_tissue_mask_tiles, tile_size=2000, downscale_factor=0.125
-):
+    camp_input_directory_tissue_mask_tiles: str,
+    tile_size: int = 2000,
+    downscale_factor: float = 0.125,
+) -> Dict[str, Dict[str, np.ndarray]]:
+    """read tiles of tissue mask
+
+    Parameters
+    ----------
+    camp_input_directory_tissue_mask_tiles : str
+        Directories to binary tumour mask tiles.
+    tile_size : int, optional
+        Width of each image tile in pixels, by default 2000
+    downscale_factor : float, optional
+        Downscaling factor when reading in image tiles, by default 0.125
+
+    Returns
+    -------
+    Dict[str, Dict[str, np.ndarray]]
+        A dictionary of dictionaries of binary tissue mask tiles.
+        Keys to the outer dictionary are the image scene names.
+        Keys to the inner dictionary are the tile names according to the CRICK tiling system.
+    """
     tile_size_downscaled = int(tile_size * downscale_factor)
 
     camp_input_directory_tissue_mask_tiles_scene_subdirs = natsorted(
