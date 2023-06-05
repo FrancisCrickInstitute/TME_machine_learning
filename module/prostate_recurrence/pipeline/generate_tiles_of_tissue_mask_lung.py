@@ -14,7 +14,6 @@ from datetime import datetime
 from glob import glob
 
 import numpy as np
-import pandas as pd
 from natsort import natsorted
 from PIL import Image
 
