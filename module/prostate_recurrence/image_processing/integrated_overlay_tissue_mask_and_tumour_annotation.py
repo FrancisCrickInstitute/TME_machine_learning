@@ -18,7 +18,7 @@ tissue mask to whole slide binary tissue mask in Numpy array.
 ## overlay_tumour_annotation_with_tissue_mask(...) to overlay downscaled whole slide tissue
 mask with downscaled whole slide tumour mask.
 
-## tiles_of_overlay_tumour_annotation_with_tissue_mask(...) calling 
+## tiles_of_overlay_tumour_annotation_with_tissue_mask(...) calling
 get_subtile_tumour_information(...) to generate summary dataframes of tissue and tumour
 proportions at tile level and at subtile level, respectively.
 
@@ -27,9 +27,8 @@ Inputs
 - tiles containing nonzero tissue areas (Crick tiling system)
 
 Outputs
-- overlay of tumour annotation on top of tissue mask, at the whole slide level
-- same as above, saved as numpy array
-- a summary data frame of percentage of tumour area in individual tiles
+- overlay of binary tumour and tissue masks, at the whole slide level
+- summary data frames of tissue and tumour proportions at tile and subtile levels
 
 """
 
@@ -824,7 +823,7 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
             (nrows_outer * tile_size_downscaled, ncols_outer * tile_size_downscaled)
         )
 
-    # print(stitched_downscaled.shape)
+    print(stitched_downscaled.shape)
 
     summary_cols = [
         "slide",
@@ -847,7 +846,7 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
         "tissue_fraction_of_tile_area",
         "tumour_fraction_of_tissue_area",
     ]
-    summary_subtile_rows = []
+    summary_subtile_rows: List[Tuple] = []
 
     for scene in scene_information_dataframe_complete.scene.unique():
         #     for scene in ['ScanRegion0']:
@@ -898,7 +897,7 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
                     + (icol + 1) * tile_size_downscaled,
                 ]
 
-                ## information
+                # information
                 tissue_percentage_of_tile_area = np.sum(image_tile > 0) / np.sum(
                     image_tile >= 0
                 )
@@ -908,7 +907,7 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
                     else 0
                 )
 
-                ## information at subtile level
+                # information at subtile level
                 summary_subtile_rows = get_subtile_tumour_information(
                     slide,
                     scene,
@@ -955,6 +954,10 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
     )
 
     return summary, summary_subtile
+
+
+# functions below attempting at overlaying cell positions with deconovlved PSR image tiles
+# don't perform as expected and are likely to be deprecated.
 
 
 def read_deconv_psr(
