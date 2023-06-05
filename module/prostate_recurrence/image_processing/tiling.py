@@ -59,11 +59,10 @@ def read_image(path_to_img: str, method: str = "aicsimageio") -> Dict[str, np.nd
         scene name : image as Numpy array
     """
 
-    allowed_methods = ["czifile", "bioformats", "aicsimageio"]
+    allowed_methods = ["czifile", "aicsimageio"]
 
     if method not in allowed_methods:
         print(f"Please use one of the allowed methods : {allowed_methods}")
-        return {}
     elif method == "czifile":
         with CziFile(path_to_img) as czi:
             return {"ScanRegion0": czi.asarray()[0, 0]}
@@ -78,6 +77,8 @@ def read_image(path_to_img: str, method: str = "aicsimageio") -> Dict[str, np.nd
             )  # returns 3D YXS numpy array
             dict_imgs[scene] = img_data
         return dict_imgs
+
+    return {}
 
 
 def read_image_mask(
