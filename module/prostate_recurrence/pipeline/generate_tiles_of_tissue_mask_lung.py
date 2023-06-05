@@ -1,6 +1,9 @@
-"""# a set of functions for generating tiles of tissue masks
+"""# This script calls functions for generating tiles of tissue masks in Lung
 
-## input images are downsized tissue masks generated in MATLAB
+Input images are downsized tissue masks of image scenes generated in MATLAB.
+
+For each image scene with tissue mask, call tiling.create_tiles(...) to create tiles
+of binary tissue mask & call tiling.save_tiles(...) to save tiles.
 
 """
 
