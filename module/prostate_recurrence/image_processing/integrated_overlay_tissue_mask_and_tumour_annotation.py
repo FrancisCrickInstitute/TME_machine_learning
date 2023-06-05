@@ -15,7 +15,8 @@ whole slide.
 ## process_tissue_mask(...) calling stitch_image_tiles(...) to stitch tiles of binary
 tissue mask to whole slide binary tissue mask in Numpy array.
 
-
+## overlay_tumour_annotation_with_tissue_mask(...) to overlay downscaled whole slide tissue
+mask with downscaled whole slide tumour mask.
 
 Inputs
 - tiles containing nonzero tumour areas (ICR tiling system)
@@ -598,11 +599,29 @@ def process_tissue_mask(
 
 
 def overlay_tumour_annotation_with_tissue_mask(
-    stitch_downscaled_annotation_binary,
-    stitch_downscaled_tissue_mask,
-    main_output_directory,
-    slide,
-):
+    stitch_downscaled_annotation_binary: np.ndarray,
+    stitch_downscaled_tissue_mask: np.ndarray,
+    main_output_directory: str,
+    slide: str,
+) -> np.ndarray:
+    """overlay whole slide tumour and tissue mask
+
+    Parameters
+    ----------
+    stitch_downscaled_annotation_binary : np.ndarray
+        Stitched whole slide binary tumour mask in Numpy array.
+    stitch_downscaled_tissue_mask : np.ndarray
+        Stitched whole slide binary tissue mask in Numpy array.
+    main_output_directory : str
+        Output directory to save outputs.
+    slide : str
+        Slide id.
+
+    Returns
+    -------
+    np.ndarray
+        Overlay of whole slide binary tumour mask and tissue mask in Numpy array.
+    """
     shapex = min(
         stitch_downscaled_tissue_mask.shape[0],
         stitch_downscaled_annotation_binary.shape[0],
