@@ -1,4 +1,36 @@
-""" This script calls functions for overlaying tissue mask with tumour annotation 
+""" This script calls functions for overlaying tissue mask with tumour annotation
+
+Batch processing of all slides with tumour annotation, by calling modules in
+"integrated_overlay_tissue_mask_and_tumour_annotation.py".
+
+For each whole slide with tumour annotation available,
+    * Information about its image scenes (in a pd.DataFrame format) and the whole slide
+    (in a Dict format) are obtained by function call
+    "integrated_overlay_tissue_mask_and_tumour_annotation.read_image_scene_information(...)".
+    This is subsequently used to match tissue masks and tumour masks.
+
+    * A dictionary of binary tumour mask tiles are obtained by function call
+    "integrated_overlay_tissue_mask_and_tumour_annotation.read_tumour_annotation(...)".
+
+    * These binary tumour mask tiles are re-stitched to the whole slide binary tumour mask,
+    at downscaled resolution, by function call
+    "integrated_overlay_tissue_mask_and_tumour_annotation.process_tumour_annotation(...)"
+
+    * A dictionary of binary tissue mask tiles are obtained by function call
+    "integrated_overlay_tissue_mask_and_tumour_annotation.read_tissue_mask(...)"
+
+    * These binary tissue mask tiles are re-stitched to the whole slide binary tissue mask,
+    at downscaled resolution, by function call
+    "integrated_overlay_tissue_mask_and_tumour_annotation.process_tissue_mask(...)"
+
+    * Whole slide binary tumour mask and whole slide tissue mask are overlaid by function call
+    "integrated_overlay_tissue_mask_and_tumour_annotation.overlay_tumour_annotation_with_tissue_mask(...)"
+
+    * Whole slide overlaid tumour and tissue masks are tiled. Summary data frames at tile level
+    and subtile level are saved.
+
+""
+
 """
 
 import argparse
@@ -7,9 +39,7 @@ import sys
 from datetime import datetime
 from glob import glob
 
-import numpy as np
 from natsort import natsorted
-from PIL import Image
 
 parser = argparse.ArgumentParser(prog="tme-ml-raw-data-tissue-psr-mask")
 parser.add_argument(
