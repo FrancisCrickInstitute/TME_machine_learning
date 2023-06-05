@@ -165,6 +165,29 @@ assert RAW_DATA_PATH and PROCESSED_DATA_PATH
 
 
 def run_tiling():
+    """perform tiling of raw image in .czi format
+
+    This function calls module in tiling.py to perform tiling. The default reading method
+    is "aicsimageio". Paths to all image data in the folder RAW_DATA_PATH are obtained.
+
+    Tip: when testing this code for a small number of images, the user can run
+        "for data_path in data_paths[:1]: ..." and check if the outputs are generated and
+        saved properly.
+
+    For each image,
+        a dictionary of images are returned from function call
+        "tiling.read_image(...)" where key:value pairs refer to
+        scene name : image as a Numpy array.
+
+    For each image scene,
+        a dictionary of image tiles are returned from function call
+        "tiling.create_tiles(...)" where key:value pairs refer to
+        tile id : image as a Numpy array.
+        additionally, the number of rows and the number of cols in this image scene
+        are also returned.
+        finally, image tiles are saved into the designated folders.
+
+    """
     print("===== TILING =====")
 
     logstr = "===== TILING =====\n"
@@ -204,9 +227,7 @@ def run_tiling():
         )
         os.makedirs(output_directory_processed_raw_tiling, exist_ok=True)
 
-        dict_imgs = tiling.read_image(
-            data_path, method=reading_method, highest_resolution=RAW_DATA_RES
-        )
+        dict_imgs = tiling.read_image(data_path, method=reading_method)
         print(f"scenes of this slide: {dict_imgs}")
 
         for scan_region, img in dict_imgs.items():
@@ -242,10 +263,6 @@ def run_tiling():
         logfile.write(logstr)
         logfile.close()
         logstr = ""
-
-    if reading_method == "bioformats":
-        print("... javabridge killing vm")
-        tiling.javabridge_kill_vm()
 
 
 def run_colour_deconvolution():
