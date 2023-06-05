@@ -156,6 +156,10 @@ def save_deconvolved_images(
             os.chmod(output_subdirectory_inverted_grayscale, mode=0o777)
             os.rename(save_path, save_path_inverted_grayscale)
 
+            coloured_basename = os.path.basename(save_path_inverted_grayscale).split(
+                "."
+            )[0]
+
             fig = plt.figure(figsize=(1.707, 1.707), dpi=300)
             ax = fig.add_axes([0, 0, 1, 1])
             ax.imshow(stained_image, cmap=cmap_psr)
@@ -163,8 +167,7 @@ def save_deconvolved_images(
             plt.savefig(
                 os.path.join(
                     output_subdirectory,
-                    os.path.basename(save_path_inverted_grayscale).split(".")[0]
-                    + "_coloured.tif",
+                    coloured_basename + "_coloured.tif",
                 ),
                 dpi=300,
             )
