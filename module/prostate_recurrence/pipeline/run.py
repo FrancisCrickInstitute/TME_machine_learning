@@ -1,14 +1,17 @@
-"""# a set of functions for running the complete tme-ml pipeline
-[to do] User has options to run some modules of the pipeline.
+"""# a set of functions for batch-processing tiling and colour deconvolution
 
-## a full tme-ml pipeline (as of 2021.08) is described as below
-(1) [image_processing] read raw image(s) from user defined input data path
-(2) [image_processing] perform tiling and save image tiles into output path
-(3) [image_processing] perform colour deconvolution and save psr tiles in to output path
-(4) [feature_engineering/MATLAB] perform feature engineering to extract ECM architectural features
-(5) [feature_engineering/Python] perform feature engineering to extract ECM textural features
-(6) [data_exploration/MATLAB] perform PCA and unsupervised clustering
-(7) [data_exploration/Python] perform stitching to construct whole slide feature heatmaps
+Customised arguments are to be defined using argparse library by the user when
+calling this function.
+
+## run_tiling(...) to batch process tiling of whole slide images. Images are read
+from user defined RAW_DATA_PATH. Processed image tiles are saved into user defined
+PROCESSED_DATA_PATH, organised according to whole slide id and individual image scenes.
+
+## run_colour_deconvolution(...) to batch process colour deconvolution of raw
+image tiles. Processed image tiles are saved into user defined PROCESSED_DATA_PATH,
+organised accoridng to whole slide id, individual image scenes, and colour channel
+names.
+
 """
 
 import argparse
