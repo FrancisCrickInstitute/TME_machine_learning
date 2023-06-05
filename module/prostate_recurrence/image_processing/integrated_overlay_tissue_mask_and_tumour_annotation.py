@@ -3,6 +3,9 @@
 ## read_image_scene_information(...) to obtain the information about image scenes,
 including the relative positions of individual scenes relative to the whole slide.
 
+## read_tumour_annotation(...) to read tiles of tumour contour line overlay with raw
+PSR+H and tiles of binary tumour mask.  
+
 Inputs
 - tiles containing nonzero tumour areas (ICR tiling system)
 - tiles containing nonzero tissue areas (Crick tiling system)
@@ -164,9 +167,29 @@ def read_image_scene_information(
 def read_tumour_annotation(
     input_directories: Dict[str, str],
     image_tile_name_pattern: str = "Da*",
-    tile_size=2000,
-    downscale_factor=0.125,
-):
+    tile_size: int = 2000,
+    downscale_factor: float = 0.125,
+) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+    """read tiles of tumour annotation
+
+    Parameters
+    ----------
+    input_directories : Dict[str, str]
+        Directories to tumour overlay tiles (contour lines overlaid with raw PSR+H image)
+        and binary tumour mask tiles. The latter is used for tissue/tumour overlay.
+    image_tile_name_pattern : str, optional
+        Naming patterns for image tiles using the ICR tiling system, by default "Da*"
+    tile_size : int, optional
+        Width of each image tile in pixels, by default 2000
+    downscale_factor : float, optional
+        Downscaling factor when reading in image tiles, by default 0.125
+
+    Returns
+    -------
+    Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]
+        A dictionary of tumour overlay tiles and a dictionary of binary tumour mask
+        tiles. Keys are the tile names according to the ICR tiling system.
+    """
     tile_size_downscaled = int(tile_size * downscale_factor)
 
     # overlay of tumour contour on raw PSR+H
