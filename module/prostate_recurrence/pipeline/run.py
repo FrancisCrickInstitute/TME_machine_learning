@@ -165,7 +165,7 @@ assert RAW_DATA_PATH and PROCESSED_DATA_PATH
 
 
 def run_tiling():
-    """perform tiling of raw image in .czi format
+    """perform tiling of raw image data in .czi format
 
     This function calls module in tiling.py to perform tiling. The default reading method
     is "aicsimageio". Paths to all image data in the folder RAW_DATA_PATH are obtained.
@@ -174,7 +174,7 @@ def run_tiling():
         "for data_path in data_paths[:1]: ..." and check if the outputs are generated and
         saved properly.
 
-    For each image,
+    For each whole slide,
         a dictionary of images are returned from function call
         "tiling.read_image(...)" where key:value pairs refer to
         scene name : image as a Numpy array.
@@ -266,6 +266,26 @@ def run_tiling():
 
 
 def run_colour_deconvolution():
+    """perform colour deconvolution of raw image tiles
+
+    This function calls module in colour_deconvolution.py to perform colour deconvolution.
+    Paths to all image data in the folder RAW_DATA_PATH are obtained.
+
+    For each whole slide,
+        paths to all of its image scenes in the processed data directory are obtained.
+
+    For each image scene,
+        paths to all of its image tiles in .tif format are obtained.
+
+    For each image tile,
+        data is read as Numpy array by calling PIL.Image.open(...). Deconvolved images in
+        Numpy array are returned from function call "colour_deconvolution.deconvolve_image(...)".
+        A colour map from white to picrosirius red is needed to generate coloured visualisation of
+        deconolved psr images and created by function call "colour_deconvolution.create_cmap(...)".
+        Deconolved images are saved into (inverted) greyscale images by function call
+        "colour_deconvolution.save_deconvolved_images(...)".
+
+    """
     print("===== COLOUR DECONVOLUTION =====")
     logstr = "===== COLOUR DECONVOLUTION =====\n"
 
