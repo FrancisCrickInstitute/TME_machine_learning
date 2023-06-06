@@ -1,7 +1,21 @@
-"""
-    This script processes Lung TDA ROIs
-    No tissue mask tiles are used for analysis
-    Subtile analysis is not performed
+"""# Script for batch-processing texture feature extraction in Lung dataset
+
+This script focuses on processing Lung TDA ROIs. No tissue mask tiles are used
+for analysis, unlike processing of image tiles from whole slide Lung dataset.
+
+Customised arguments are to be defined using argparse library by the user when
+calling this script.
+
+Extraction of texture features is performed only at the tile level.
+
+## extract_texture_features_this_image(...) to perform texture feature extraction of
+a single PSR tile. This function expects arguments reflecting the path to the
+deconvolved PSR tile. Modules in first_order_histogram.py, glcm.py, and perception.py
+are called to extract intensity features, grey level co-occurence matrix features, and
+perception features, respectively. Options to process only a subset of texture feature
+domains can be set using FLAG_INTENSITY_FEATURES, FLAG_GLCM_FEATURES, and
+FLAG_PERCEPTION_FEATURES.
+
 """
 
 import argparse
@@ -101,7 +115,26 @@ from prostate_recurrence.feature_engineering.Python import (
 )
 
 
-def extract_texture_features_this_image(path_to_valid_image_tile):
+def extract_texture_features_this_image(path_to_valid_image_tile: str):
+    """perform texture feature extraction of a single image tile
+
+    This function calls module in first_order_histogram.py, glcm.py, perception.py to
+    extract pixel intensity features, grey level co-occurence matrix features, and
+    perception features, respectively.
+
+    If only a subset of texture feature domains need processing, boolean variables
+        FLAG_INTENSITY_FEATURES, FLAG_GLCM_FEATURES, FLAG_PERCEPTION_FEATURES can be set
+        accordingly to turn on only relevant parts of processing.
+
+    Tip: when testing this code for a small number of images, the user can run
+        "for k, path_to_valid_image_tile in enumerate(paths_to_valid_image_tiles[:1]): ..."
+        and check if the outputs are generated and saved properly.
+
+    Parameters
+    ----------
+    path_to_valid_image_tile : str
+        The path to the deconvolved PSR image tile
+    """
     basename_valid_image_tile = os.path.basename(path_to_valid_image_tile)
     output_directory_processed_texture_features_this_image_tile = os.path.join(
         OUTPUT_DIRECTORY,
@@ -223,7 +256,10 @@ def extract_texture_features_this_image(path_to_valid_image_tile):
 if __name__ == "__main__":
 
     paths_to_valid_image_tiles = natsorted(
-        glob(os.path.join(IMAGE_DATA_PATH, f"**/{IMAGE_FILENAME_START}*.tif"), recursive=True)
+        glob(
+            os.path.join(IMAGE_DATA_PATH, f"**/{IMAGE_FILENAME_START}*.tif"),
+            recursive=True,
+        )
     )
     print(paths_to_valid_image_tiles)
 
