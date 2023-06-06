@@ -131,7 +131,9 @@ def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile: str) ->
 
 
 def extract_glcm_features_this_image(
-    path_to_valid_image_tile: str, path_to_image_tile_texture_feature_folder: str
+    path_to_valid_image_tile: str,
+    path_to_corresponding_tissue_mask_tile: str,
+    path_to_image_tile_texture_feature_folder: str,
 ) -> None:
     """perform glcm feature extraction of a single image tile
 
@@ -148,7 +150,9 @@ def extract_glcm_features_this_image(
 
     # read image
     image_array = glcm.read_image(path_to_img=path_to_valid_image_tile)
-    tissue_mask_array = np.ones_like(image_array)
+    tissue_mask_array = glcm.read_image(
+        path_to_img=path_to_corresponding_tissue_mask_tile
+    )
 
     # texture - glcm
     if True:
@@ -265,6 +269,7 @@ if __name__ == "__main__":
 
                 extract_glcm_features_this_image(
                     path_to_valid_image_tile=path_to_valid_image_tile,
+                    path_to_corresponding_tissue_mask_tile=path_to_corresponding_tissue_mask_tile,
                     path_to_image_tile_texture_feature_folder=path_to_image_tile_texture_feature_folder,
                 )
 
