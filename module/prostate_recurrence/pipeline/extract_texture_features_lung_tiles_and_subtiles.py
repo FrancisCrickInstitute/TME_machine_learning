@@ -1,7 +1,26 @@
-"""
-    This script processes Lung tiles 
-    Tissue mask tiles should have already been generated 
-    Subtile analysis will be performed together with tile-level analysis
+"""# Script for batch-processing texture feature extraction in Lung dataset
+
+Customised arguments are to be defined using argparse library by the user when
+calling this script.
+
+Extraction of texture features is performed both at the tile level and at the
+subtile level.
+
+## get_path_to_image_tile(...) to obtain the path to the tissue masked deconvolved
+PSR image tile given provided slide id, scene name, and image tile name.
+
+## get_path_to_corresponding_tissue_mask_tile(...) to obtain the path to the tissue
+mask tile correponding to the path to the tissue masked deconvolved PSR image tile.
+
+## extract_texture_features_this_image(...), calling process_intensity_features(...),
+process_glcm_features(...), and process_perception_features(...), to perform texture
+feature extraction of a single PSR tile. This function expects arguments reflecting
+the path to the tissue masked deconvolved PSR tile and its corresponding tissue mask
+tile. Modules in first_order_histogram.py, glcm.py, and perception.py are called to
+extract intensity features, grey level co-occurence matrix features, and perception
+features, respectively. Options to process only a subset of texture feature domains
+can be set using FLAG_INTENSITY_FEATURES, FLAG_GLCM_FEATURES, and
+FLAG_PERCEPTION_FEATURES.
 
 """
 
@@ -9,11 +28,9 @@ import argparse
 import os
 import sys
 from datetime import datetime
-from glob import glob
 
 import numpy as np
 import pandas as pd
-from natsort import natsorted
 
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline-texture-features")
 parser.add_argument(
@@ -148,7 +165,23 @@ from prostate_recurrence.feature_engineering.Python import (
 )
 
 
-def get_path_to_image_tile(slide_id, scene, tile):
+def get_path_to_image_tile(slide_id: str, scene: str, tile: str) -> str:
+    """obtain the path to tissue masked deconvolved PSR tile
+
+    Parameters
+    ----------
+    slide_id : str
+        Slide id.
+    scene : str
+        Scene name.
+    tile : str
+        Image tile name.
+
+    Returns
+    -------
+    str
+        The path to the tissue masked deconvolved PSR tile
+    """
     path_to_valid_image_tile = os.path.join(
         PROCESSED_DATA_PATH,
         slide_id,
@@ -160,7 +193,20 @@ def get_path_to_image_tile(slide_id, scene, tile):
     return path_to_valid_image_tile
 
 
-def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile):
+def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile: str) -> str:
+    """obtain the path to the corresponding tissue mask tile of the input
+    tissue masked deconvolved image tile
+
+    Parameters
+    ----------
+    path_to_valid_image_tile : str
+        The path to the tissue masked deconvolved PSR tile
+
+    Returns
+    -------
+    str
+        The path to the corresponding tissue mask tile
+    """
     path_splited = path_to_valid_image_tile.split("/")
     slide_keyword_index = path_splited.index("PSR_20X") + 1
     scene_keyword_index = path_splited.index("deconvolutions") + 1
@@ -180,7 +226,20 @@ def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile):
     return path_to_corresponding_tissue_mask_tile
 
 
-def process_intensity_features(image_array, tissue_mask_array, output_subdir):
+def process_intensity_features(
+    image_array: np.ndarray, tissue_mask_array: np.ndarray, output_subdir: str
+) -> None:
+    """extract intensity features from this image tile
+
+    Parameters
+    ----------
+    image_array : np.ndarray
+        The tissue masked deconvolved PSR image array.
+    tissue_mask_array : np.ndarray
+        The corresponding tissue mask image array.
+    output_subdir : str
+        Directory to save feature extraction outputs.
+    """
     histogram, masked_image_array = first_order_histogram.construct_histogram(
         image=image_array, mask=tissue_mask_array
     )
@@ -206,7 +265,20 @@ def process_intensity_features(image_array, tissue_mask_array, output_subdir):
     )
 
 
-def process_glcm_features(image_array, tissue_mask_array, output_subdir):
+def process_glcm_features(
+    image_array: np.ndarray, tissue_mask_array: np.ndarray, output_subdir: str
+) -> None:
+    """extract grey level co-occurence matrix features from this image tile
+
+    Parameters
+    ----------
+    image_array : np.ndarray
+        The tissue masked deconvolved PSR image array.
+    tissue_mask_array : np.ndarray
+        The corresponding tissue mask image array.
+    output_subdir : str
+        Directory to save feature extraction outputs.
+    """
     distances = [1, 2, 5, 11, 22, 45, 90, 182, 364]
     angles = [0, np.pi / 4.0, np.pi / 2.0, np.pi * 3 / 4.0]
     symmetric = True
@@ -245,7 +317,20 @@ def process_glcm_features(image_array, tissue_mask_array, output_subdir):
     )
 
 
-def process_perception_features(image_array, tissue_mask_array, output_subdir):
+def process_perception_features(
+    image_array: np.ndarray, tissue_mask_array: np.ndarray, output_subdir: str
+) -> None:
+    """extract perception features from this image tile
+
+    Parameters
+    ----------
+    image_array : np.ndarray
+        The tissue masked deconvolved PSR image array.
+    tissue_mask_array : np.ndarray
+        The corresponding tissue mask image array.
+    output_subdir : str
+        Directory to save feature extraction outputs.
+    """
     (coarseness_arrays, S, coarseness) = perception.calculate_coarseness(
         image=image_array, mask=tissue_mask_array
     )
@@ -277,8 +362,26 @@ def process_perception_features(image_array, tissue_mask_array, output_subdir):
 
 
 def extract_texture_features_this_image(
-    path_to_valid_image_tile, path_to_corresponding_tissue_mask_tile
-):
+    path_to_valid_image_tile: str, path_to_corresponding_tissue_mask_tile: str
+) -> None:
+    """perform texture feature extraction of a single image tile
+
+    This function focuses on processing extraction of texture features both at the tile
+    level and at the subtile level.
+    User-defined SUBDIVISION controls the size of subtiles; by default, a subtile is half
+    the width of a tile.
+
+    If only a subset of texture feature domains need processing, boolean variables
+        FLAG_INTENSITY_FEATURES, FLAG_GLCM_FEATURES, FLAG_PERCEPTION_FEATURES can be set
+        accordingly to turn on only relevant parts of processing.
+
+    Parameters
+    ----------
+    path_to_valid_image_tile : str
+        The path to the tissue masked deconvolved PSR image tile
+    path_to_corresponding_tissue_mask_tile : str
+        The path to the corresponding tissue mask tile
+    """
 
     dirname_valid_image_tile = os.path.dirname(path_to_valid_image_tile)
     basename_valid_image_tile = os.path.basename(path_to_valid_image_tile)
@@ -390,9 +493,7 @@ if __name__ == "__main__":
         PATH_TO_JOB_BATCH_INFORMATION
     )  # ["slide_id", "scene", "tile", "tile_index"]
 
-    logstr = (
-        f"===== EXTRACTION OF TEXTURE FEATURES (job batch: {os.path.basename(PATH_TO_JOB_BATCH_INFORMATION)}) =====\n"
-    )
+    logstr = f"===== EXTRACTION OF TEXTURE FEATURES (job batch: {os.path.basename(PATH_TO_JOB_BATCH_INFORMATION)}) =====\n"
     now = datetime.now()
     date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
     logstr += f"started at {date_time}\n"
