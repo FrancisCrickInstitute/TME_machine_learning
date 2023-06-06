@@ -1,3 +1,26 @@
+"""# Script for batch-processing texture feature extraction
+
+Customised arguments are to be defined using argparse library by the user when
+calling this script.
+
+## get_path_to_corresponding_tissue_mask_tile(...) to obtain the corresponding
+path to the tissue mask tile of the provided tissue masked deconvolved PSR tile.
+
+## extract_texture_features_this_image(...) to perform texture feature extraction
+of a single PSR tile. This function expects arguments reflecting the path to the
+tissue masked deconvolved PSR tile and its corresponding tissue mask tile. Modules
+in first_order_histogram.py, glcm.py, and perception.py are called to extract
+intensity features, grey level co-occurence matrix features, and perception features,
+respectively. Options to process only a subset of texture feature domains can be
+set using FLAG_INTENSITY_FEATURES, FLAG_GLCM_FEATURES, and FLAG_PERCEPTION_FEATURES.
+
+Returns
+-------
+_type_
+    _description_
+"""
+
+
 import argparse
 import os
 import sys
@@ -132,7 +155,19 @@ from prostate_recurrence.feature_engineering.Python import (
 )
 
 
-def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile):
+def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile: str) -> str:
+    """obtain the path to the corresponding tissue mask tile
+
+    Parameters
+    ----------
+    path_to_valid_image_tile : str
+        The path to the tissue masked deconvolved PSR image tile
+
+    Returns
+    -------
+    str
+        The path to the corresponding tissue mask tile
+    """
     path_splited = path_to_valid_image_tile.split("/")
     slide_keyword_index = path_splited.index("slide_20X") + 1
     scene_keyword_index = path_splited.index("deconvolutions") + 1
@@ -153,8 +188,29 @@ def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile):
 
 
 def extract_texture_features_this_image(
-    path_to_valid_image_tile, path_to_corresponding_tissue_mask_tile
-):
+    path_to_valid_image_tile: str, path_to_corresponding_tissue_mask_tile: str
+) -> None:
+    """perform texture feature extraction of a single image tile
+
+    This function calls module in first_order_histogram.py, glcm.py, perception.py to
+    extract pixel intensity features, grey level co-occurence matrix features, and
+    perception features, respectively.
+
+    If only a subset of texture feature domains need processing, boolean variables
+        FLAG_INTENSITY_FEATURES, FLAG_GLCM_FEATURES, FLAG_PERCEPTION_FEATURES can be set
+        accordingly to turn on only relevant parts of processing.
+
+    Tip: when testing this code for a small number of images, the user can run
+        "for path in all_paths_to_data[:1]: ..." and check if the outputs are generated
+        and saved properly.
+
+    Parameters
+    ----------
+    path_to_valid_image_tile : str
+        The path to the tissue masked deconvolved PSR image tile
+    path_to_corresponding_tissue_mask_tile : str
+        The path to the corresponding tissue mask tile
+    """
 
     dirname_valid_image_tile = os.path.dirname(path_to_valid_image_tile)
     basename_valid_image_tile = os.path.basename(path_to_valid_image_tile)
@@ -357,7 +413,7 @@ if __name__ == "__main__":
                 else:
                     print(
                         "no summmary valid image tiles file found for:"
-                        + f"slide {data_id} - scene {scan_region}"
+                        f"slide {data_id} - scene {scan_region}"
                     )
 
                 now = datetime.now()
