@@ -237,4 +237,8 @@ def get_data_paths_lung(
         data=dataset_summary_rows, columns=dataset_summary_cols
     )
 
+    # the code appears to be incomplete. returned variable is strange, too.
+    # similar functionalities to
+    # get_data_paths_prostate(...) above need to be implemented.
+
     return dataset_summary
