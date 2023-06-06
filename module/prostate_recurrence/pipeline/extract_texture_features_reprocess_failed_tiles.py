@@ -14,9 +14,9 @@ name. Note that the paths are hard-coded according to the current folder organis
 of the Prostate dataset and therefore are subject to changes in application to other
 datasets.
 
-## extract_texture_features_this_image(...), calling process_intensity_features(...), 
+## extract_texture_features_this_image(...), calling process_intensity_features(...),
 process_glcm_features(...), and process_perception_features(...), to perform texture
-feature extraction of a single PSR tile. This function expects arguments reflecting 
+feature extraction of a single PSR tile. This function expects arguments reflecting
 the path to the tissue masked deconvolved PSR tile and its corresponding tissue mask
 tile. Options to process only a subset of texture feature domains can be set using
 flag_intensity_features, flag_glcm_features, and flag_perception_features.
