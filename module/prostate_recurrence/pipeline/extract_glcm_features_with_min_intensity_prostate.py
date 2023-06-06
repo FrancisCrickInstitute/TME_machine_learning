@@ -1,7 +1,24 @@
-"""
-    This script processes Prostate Tiles
-    All data paths based on folders that contain tile level features
-    Subtile analysis is not performed
+"""# Script for batch-processing GLCM feature extraction in Prostate dataset
+
+Customised arguments are to be defined using argparse library by the user when
+calling this script.
+
+Extraction of GLCM features is performed only at the tile level. For each tile,
+only pixels with a minimum intensity level are included for GLCM feature analysis.
+
+## get_path_to_valid_image_tile(...) to obtain the path to the corresponding tissue
+masked deconvolved PSR image tile given the input argument indicating a folder
+containing previously generated texture feature outputs.
+
+## get_path_to_corresponding_tissue_mask_tile(...) to obtain the corresponding
+path to the tissue mask tile of the provided tissue masked deconvolved PSR tile.
+
+## extract_glcm_features_this_image(...) to perform GLCM feature extraction
+of a single PSR tile. This function expects arguments reflecting the path to the
+tissue masked deconvolved PSR tile, the path to its corresponding tissue mask tile,
+and the path to the folder containing texture feature outputs.
+Modules in glcm.py are called to extract grey level co-occurence matrix features.
+
 """
 
 import argparse
@@ -11,7 +28,6 @@ from datetime import datetime
 from glob import glob
 
 import numpy as np
-import pandas as pd
 from natsort import natsorted
 
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline-glcm-features")
@@ -52,7 +68,19 @@ if MODULE_PATH not in sys.path:
 from prostate_recurrence.feature_engineering.Python import glcm
 
 
-def get_path_to_valid_image_tile(path_to_image_tile_texture_feature_folder):
+def get_path_to_valid_image_tile(path_to_image_tile_texture_feature_folder: str) -> str:
+    """obtain the path to the tissue masked deconvolved PSR image tile
+
+    Parameters
+    ----------
+    path_to_image_tile_texture_feature_folder : str
+        The path to the folder containing previously processed texture feature outputs.
+
+    Returns
+    -------
+    str
+        The path to the tissue masked deconvolved PSR image tile
+    """
     dirname_valid_image_tile = os.path.dirname(
         os.path.dirname(
             path_to_image_tile_texture_feature_folder.replace(
@@ -70,7 +98,19 @@ def get_path_to_valid_image_tile(path_to_image_tile_texture_feature_folder):
     return path_to_valid_image_tile
 
 
-def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile):
+def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile: str) -> str:
+    """obtain the path to the corresponding tissue mask tile
+
+    Parameters
+    ----------
+    path_to_valid_image_tile : str
+        The path to the tissue masked deconvolved PSR image tile
+
+    Returns
+    -------
+    str
+        The path to the corresponding tissue mask tile
+    """
     path_splited = path_to_valid_image_tile.split("/")
     slide_keyword_index = path_splited.index("slide_20X") + 1
     scene_keyword_index = path_splited.index("deconvolutions") + 1
@@ -91,8 +131,17 @@ def get_path_to_corresponding_tissue_mask_tile(path_to_valid_image_tile):
 
 
 def extract_glcm_features_this_image(
-    path_to_valid_image_tile, path_to_image_tile_texture_feature_folder
-):
+    path_to_valid_image_tile: str, path_to_image_tile_texture_feature_folder: str
+) -> None:
+    """perform glcm feature extraction of a single image tile
+
+    Parameters
+    ----------
+    path_to_valid_image_tile : str
+        The path to the tissue masked deconvolved PSR image tile
+    path_to_image_tile_texture_feature_folder : str
+        The path to the folder containing previously processed texture feature outputs.
+    """
     output_directory_processed_texture_features_this_image_tile = (
         path_to_image_tile_texture_feature_folder
     )
