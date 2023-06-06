@@ -1,7 +1,16 @@
-"""
-    This script processes Lung TDA ROIs
-    No tissue mask tiles are used for analysis
-    Subtile analysis is not performed
+"""# Script for batch-processing GLCM feature extraction in Lung TDA ROI dataset
+
+Customised arguments are to be defined using argparse library by the user when
+calling this script.
+
+Extraction of GLCM features is performed only at the tile level. For each tile,
+only pixels with a minimum intensity level are included for GLCM feature analysis.
+
+## extract_glcm_features_this_image(...) to perform GLCM feature extraction
+of a single PSR tile. This function expects arguments reflecting the path to the
+tissue masked deconvolved PSR tile, the path to its corresponding tissue mask tile,
+and the path to the folder containing texture feature outputs.
+Modules in glcm.py are called to extract grey level co-occurence matrix features.
 """
 
 
@@ -12,7 +21,6 @@ from datetime import datetime
 from glob import glob
 
 import numpy as np
-import pandas as pd
 from natsort import natsorted
 
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline-texture-features")
