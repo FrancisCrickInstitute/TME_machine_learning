@@ -1,12 +1,36 @@
+"""# Script for batch-processing texture feature extraction in Prostate dataset
+
+Customised arguments are to be defined using argparse library by the user when
+calling this script.
+
+This script is only applicable to previously failed processing jobs in the
+Prostate dataset. The PATH_TO_FAILED_TILES_IN_BATCHES is a user-defined
+argument for locating previously failed tiles, generated in MATLAB.
+
+## get_paths_to_psr_and_tissue_mask(...) to obtain the path to the tissue masked
+deconvolved PSR image tile and the path to the corresponding tissue mask tile.
+The function expects arguments indicating the slide id, scene name, and image tile
+name. Note that the paths are hard-coded according to the current folder organisation
+of the Prostate dataset and therefore are subject to changes in application to other
+datasets.
+
+## extract_texture_features_this_image(...), calling process_intensity_features(...), 
+process_glcm_features(...), and process_perception_features(...), to perform texture
+feature extraction of a single PSR tile. This function expects arguments reflecting 
+the path to the tissue masked deconvolved PSR tile and its corresponding tissue mask
+tile. Options to process only a subset of texture feature domains can be set using
+flag_intensity_features, flag_glcm_features, and flag_perception_features.
+
+"""
+
 import argparse
 import os
 import sys
 from datetime import datetime
-from glob import glob
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
-from natsort import natsorted
 
 parser = argparse.ArgumentParser(prog="tme-ml-pipeline-texture-features")
 parser.add_argument(
@@ -115,7 +139,27 @@ from prostate_recurrence.feature_engineering.Python import (
 )
 
 
-def get_paths_to_psr_and_tissue_mask(slide_id, scene_id, tile):
+def get_paths_to_psr_and_tissue_mask(
+    slide_id: str, scene_id: str, tile: str
+) -> Tuple[str, str]:
+    """obtain the paths to tissue masked deconvolved PSR tile and
+    tissue mask tile
+
+    Parameters
+    ----------
+    slide_id : str
+        Slide id.
+    scene_id : str
+        Scene name.
+    tile : str
+        Image tile name.
+
+    Returns
+    -------
+    Tuple[str, str]
+        The path to the tissue masked deconvolved PSR tile and
+        the path to the tissue mask tile.
+    """
     deconvolved_psr_image_tile_name = f"image_tile_{tile}_psr"
     tissue_mask_image_tile_name = f"image_tile_{tile}"
 
@@ -141,7 +185,20 @@ def get_paths_to_psr_and_tissue_mask(slide_id, scene_id, tile):
     return (path_to_deconvolved_psr_tile, path_to_tissue_mask_tile)
 
 
-def process_intensity_features(image_array, tissue_mask_array, output_subdir):
+def process_intensity_features(
+    image_array: np.ndarray, tissue_mask_array: np.ndarray, output_subdir: str
+) -> None:
+    """extract intensity features from this image tile
+
+    Parameters
+    ----------
+    image_array : np.ndarray
+        The tissue masked deconvolved PSR image array.
+    tissue_mask_array : np.ndarray
+        The corresponding tissue mask image array.
+    output_subdir : str
+        Directory to save feature extraction outputs.
+    """
     histogram, masked_image_array = first_order_histogram.construct_histogram(
         image=image_array, mask=tissue_mask_array
     )
@@ -167,7 +224,20 @@ def process_intensity_features(image_array, tissue_mask_array, output_subdir):
     )
 
 
-def process_glcm_features(image_array, tissue_mask_array, output_subdir):
+def process_glcm_features(
+    image_array: np.ndarray, tissue_mask_array: np.ndarray, output_subdir: str
+) -> None:
+    """extract grey level co-occurence matrix features from this image tile
+
+    Parameters
+    ----------
+    image_array : np.ndarray
+        The tissue masked deconvolved PSR image array.
+    tissue_mask_array : np.ndarray
+        The corresponding tissue mask image array.
+    output_subdir : str
+        Directory to save feature extraction outputs.
+    """
     distances = [1, 2, 5, 11, 22, 45, 90, 182, 364]
     angles = [0, np.pi / 4.0, np.pi / 2.0, np.pi * 3 / 4.0]
     symmetric = True
@@ -206,7 +276,20 @@ def process_glcm_features(image_array, tissue_mask_array, output_subdir):
     )
 
 
-def process_perception_features(image_array, tissue_mask_array, output_subdir):
+def process_perception_features(
+    image_array: np.ndarray, tissue_mask_array: np.ndarray, output_subdir: str
+) -> None:
+    """extract perception features from this image tile
+
+    Parameters
+    ----------
+    image_array : np.ndarray
+        The tissue masked deconvolved PSR image array.
+    tissue_mask_array : np.ndarray
+        The corresponding tissue mask image array.
+    output_subdir : str
+        Directory to save feature extraction outputs.
+    """
     (coarseness_arrays, S, coarseness) = perception.calculate_coarseness(
         image=image_array, mask=tissue_mask_array
     )
@@ -238,12 +321,28 @@ def process_perception_features(image_array, tissue_mask_array, output_subdir):
 
 
 def extract_texture_features_this_image(
-    path_to_valid_image_tile,
-    path_to_corresponding_tissue_mask_tile,
-    flag_intensity_features,
-    flag_glcm_features,
-    flag_perception_features,
-):
+    path_to_valid_image_tile: str,
+    path_to_corresponding_tissue_mask_tile: str,
+    flag_intensity_features: bool,
+    flag_glcm_features: bool,
+    flag_perception_features: bool,
+) -> None:
+    """perform texture feature extraction of a single image tile
+
+    Parameters
+    ----------
+    path_to_valid_image_tile : str
+        The path to the tissue masked deconvolved PSR image tile
+    path_to_corresponding_tissue_mask_tile : str
+        The path to the corresponding tissue mask tile
+    flag_intensity_features : bool
+        A boolean variable indicating whether to extract intensity features.
+    flag_glcm_features : bool
+        A boolean variable indicating whether to extract grey level co-occurence
+        matrix features.
+    flag_perception_features : bool
+        A boolean variable indicating whether to extract perception features.
+    """
 
     dirname_valid_image_tile = os.path.dirname(path_to_valid_image_tile)
     basename_valid_image_tile = os.path.basename(path_to_valid_image_tile)
