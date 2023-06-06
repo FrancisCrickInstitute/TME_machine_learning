@@ -1,4 +1,4 @@
-"""# Script for batch-processing texture feature extraction
+"""# Script for batch-processing texture feature extraction in Prostate dataset
 
 Customised arguments are to be defined using argparse library by the user when
 calling this script.
@@ -14,10 +14,6 @@ intensity features, grey level co-occurence matrix features, and perception feat
 respectively. Options to process only a subset of texture feature domains can be
 set using FLAG_INTENSITY_FEATURES, FLAG_GLCM_FEATURES, and FLAG_PERCEPTION_FEATURES.
 
-Returns
--------
-_type_
-    _description_
 """
 
 
