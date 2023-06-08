@@ -64,12 +64,15 @@ import get_image_data_paths
 import image_data_loader
 
 if __name__ == "__main__":
+    # ===== read feature dataframe =====
     feature_df = pd.read_csv(PATH_TO_FEATURE_DF)
+    # for testing purpose, focus on tiles with high tissue proportion and high tumour proportion
     feature_df_filtered = feature_df.loc[
         (feature_df.tissue_proportion >= 0.5) & (feature_df.tumour_proportion >= 0.5)
     ].copy()
 
-    # training & test
+    # ===== train/test split =====
+    # for testing purpose, read in cross_validation_set_1
     dirname_path_to_feature_df = os.path.dirname(PATH_TO_FEATURE_DF)
     path_to_cv_set_1 = os.path.join(
         dirname_path_to_feature_df, "cross_validation_set_1.csv"
@@ -81,6 +84,7 @@ if __name__ == "__main__":
     ]
     print(len(training_set_patient_ids), len(test_set_patient_ids))
 
+    # split the feature dataframe into train/test
     feature_df_train = feature_df_filtered.loc[
         feature_df_filtered.patient_id.isin(training_set_patient_ids)
     ].copy()
@@ -92,6 +96,7 @@ if __name__ == "__main__":
     labels_test = feature_df_test.case.tolist()
     print(len(labels_test))
 
+    # ===== fetch relevant image paths for train & test =====
     dict_image_paths_train = (
         get_image_data_paths.get_data_paths_prostate_based_on_feature_df(
             feature_df=feature_df_train, processed_data_directory=PROCESSED_DATA_PATH
@@ -104,6 +109,7 @@ if __name__ == "__main__":
     )
     print(len(dict_image_paths_train), len(dict_image_paths_test))
 
+    # ===== construct MyDataGenerator objects for train & test =====
     TILE_SIZE = 2000
     BATCH_SIZE = 4  # 32 causes oom error
     params = {
@@ -114,7 +120,6 @@ if __name__ == "__main__":
         "shuffle": True,
         "return_image_paths": False,
     }
-
     my_data_generator_train = image_data_loader.MyDataGenerator(
         dict_image_paths=dict_image_paths_train, labels=labels_train, **params
     )
@@ -122,7 +127,11 @@ if __name__ == "__main__":
         dict_image_paths=dict_image_paths_test, labels=labels_test, **params
     )
 
+    # ===== train a simple CNN model =====
+    # work in progress!
+    # this needs to be re-factored into a simple_cnn_model.py module
     if True:
+        # create a simple CNN model
         model = models.Sequential()
 
         model.add(
@@ -158,20 +167,23 @@ if __name__ == "__main__":
         model.add(layer=layers.Dense(units=1, activation="sigmoid"))
         print(model.summary())
 
-    model.compile(
-        loss="binary_crossentropy",
-        optimizer=tf.keras.optimizers.legacy.RMSprop(learning_rate=0.001),
-        metrics="accuracy",
-    )
+        # compile the model
+        model.compile(
+            loss="binary_crossentropy",
+            optimizer=tf.keras.optimizers.legacy.RMSprop(learning_rate=0.001),
+            metrics="accuracy",
+        )
 
-    history = model.fit(
-        x=my_data_generator_train,
-        validation_data=my_data_generator_test,
-        epochs=50,
-        workers=4,
-        #     use_multiprocessing=True
-    )
+        # fit the model, with data generators as input
+        history = model.fit(
+            x=my_data_generator_train,
+            validation_data=my_data_generator_test,
+            epochs=50,
+            workers=4,
+            #     use_multiprocessing=True
+        )
 
-    summary = pd.DataFrame(history.history)
-    print(summary)
-    summary.to_csv("./summary.csv")
+        # save the training summary
+        summary = pd.DataFrame(history.history)
+        print(summary)
+        summary.to_csv("./summary.csv")
