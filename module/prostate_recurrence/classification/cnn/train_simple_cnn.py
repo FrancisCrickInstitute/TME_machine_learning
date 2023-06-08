@@ -1,10 +1,21 @@
+"""# Script to train a simple cnn model
+
+This script is work in progress.
+
+This script calls modules in get_image_data_paths.py and image_data_loader.py to
+construct a MyDataGenerator (subclass of Sequence) object for effeciently loading
+image tiles from the folder tree in the Prostate dataset.
+
+Refactoring of the code into a seperate simple_cnn_model.py is to be implemented.
+
+"""
+
+
 import argparse
 import os
 import sys
-import numpy as np
 import pandas as pd
 import tensorflow as tf
-import PIL
 from tensorflow.keras import layers, models
 
 parser = argparse.ArgumentParser(prog="tme-ml-cnn")
@@ -55,22 +66,18 @@ import image_data_loader
 if __name__ == "__main__":
     feature_df = pd.read_csv(PATH_TO_FEATURE_DF)
     feature_df_filtered = feature_df.loc[
-        (feature_df.tissue_proportion >= 0.5) &
-        (feature_df.tumour_proportion >= 0.5)
+        (feature_df.tissue_proportion >= 0.5) & (feature_df.tumour_proportion >= 0.5)
     ].copy()
 
     # training & test
     dirname_path_to_feature_df = os.path.dirname(PATH_TO_FEATURE_DF)
     path_to_cv_set_1 = os.path.join(
-        dirname_path_to_feature_df,
-        'cross_validation_set_1.csv'
+        dirname_path_to_feature_df, "cross_validation_set_1.csv"
     )
     cv_set_1 = pd.read_csv(path_to_cv_set_1)
     training_set_patient_ids = cv_set_1.training_set_patient_id.unique()
     test_set_patient_ids = [
-        pid
-        for pid in cv_set_1.test_set_patient_id.unique()
-        if type(pid) == str
+        pid for pid in cv_set_1.test_set_patient_id.unique() if type(pid) == str
     ]
     print(len(training_set_patient_ids), len(test_set_patient_ids))
 
@@ -85,36 +92,34 @@ if __name__ == "__main__":
     labels_test = feature_df_test.case.tolist()
     print(len(labels_test))
 
-    dict_image_paths_train = get_image_data_paths.get_data_paths_prostate_based_on_feature_df(
-        feature_df=feature_df_train,
-        processed_data_directory=PROCESSED_DATA_PATH
+    dict_image_paths_train = (
+        get_image_data_paths.get_data_paths_prostate_based_on_feature_df(
+            feature_df=feature_df_train, processed_data_directory=PROCESSED_DATA_PATH
+        )
     )
-    dict_image_paths_test = get_image_data_paths.get_data_paths_prostate_based_on_feature_df(
-        feature_df=feature_df_test,
-        processed_data_directory=PROCESSED_DATA_PATH
+    dict_image_paths_test = (
+        get_image_data_paths.get_data_paths_prostate_based_on_feature_df(
+            feature_df=feature_df_test, processed_data_directory=PROCESSED_DATA_PATH
+        )
     )
     print(len(dict_image_paths_train), len(dict_image_paths_test))
 
     TILE_SIZE = 2000
-    BATCH_SIZE = 4 # 32 causes oom error
+    BATCH_SIZE = 4  # 32 causes oom error
     params = {
         "dim": (TILE_SIZE, TILE_SIZE),
         "batch_size": BATCH_SIZE,
         "n_classes": 2,
         "n_channels": 1,
         "shuffle": True,
-        "return_image_paths": False
+        "return_image_paths": False,
     }
 
     my_data_generator_train = image_data_loader.MyDataGenerator(
-        dict_image_paths=dict_image_paths_train,
-        labels=labels_train,
-        **params
+        dict_image_paths=dict_image_paths_train, labels=labels_train, **params
     )
     my_data_generator_test = image_data_loader.MyDataGenerator(
-        dict_image_paths=dict_image_paths_test,
-        labels=labels_test,
-        **params
+        dict_image_paths=dict_image_paths_test, labels=labels_test, **params
     )
 
     if True:
@@ -122,65 +127,41 @@ if __name__ == "__main__":
 
         model.add(
             layer=layers.Conv2D(
-                filters=32, kernel_size=(5, 5),
-                padding='same',
-                activation='relu',
-                input_shape=(2000, 2000, 1)
+                filters=32,
+                kernel_size=(5, 5),
+                padding="same",
+                activation="relu",
+                input_shape=(2000, 2000, 1),
             )
         )
-        model.add(
-            layer=layers.MaxPool2D(pool_size=(4, 4))  # 500 x 500 x 32
-        )
+        model.add(layer=layers.MaxPool2D(pool_size=(4, 4)))  # 500 x 500 x 32
         model.add(
             layer=layers.Conv2D(
-                filters=64, kernel_size=(3, 3),
-                padding='same',
-                activation='relu'
+                filters=64, kernel_size=(3, 3), padding="same", activation="relu"
             )
         )
-        model.add(
-            layer=layers.MaxPool2D(pool_size=(4, 4))  # 125 x 125 x 64
-        )
+        model.add(layer=layers.MaxPool2D(pool_size=(4, 4)))  # 125 x 125 x 64
         model.add(
             layer=layers.Conv2D(
-                filters=64, kernel_size=(3, 3),
-                padding='same',
-                activation='relu'
+                filters=64, kernel_size=(3, 3), padding="same", activation="relu"
             )
         )
-        model.add(
-            layer=layers.MaxPool2D(pool_size=(5, 5))  # 25 x 25 x 64
-        )
+        model.add(layer=layers.MaxPool2D(pool_size=(5, 5)))  # 25 x 25 x 64
         model.add(
             layer=layers.Conv2D(
-                filters=64, kernel_size=(3, 3),
-                padding='same',
-                activation='relu'
+                filters=64, kernel_size=(3, 3), padding="same", activation="relu"
             )
         )
 
-        model.add(
-            layer=layers.Flatten()
-        )
-        model.add(
-            layer=layers.Dense(
-                units=32,
-                activation="relu"
-            )
-        )
-        model.add(
-            layer=layers.Dense(
-                units=1, activation='sigmoid'
-            )
-        )
+        model.add(layer=layers.Flatten())
+        model.add(layer=layers.Dense(units=32, activation="relu"))
+        model.add(layer=layers.Dense(units=1, activation="sigmoid"))
         print(model.summary())
 
     model.compile(
-        loss='binary_crossentropy',
-        optimizer=tf.keras.optimizers.legacy.RMSprop(
-            learning_rate=0.001
-        ),
-        metrics='accuracy'
+        loss="binary_crossentropy",
+        optimizer=tf.keras.optimizers.legacy.RMSprop(learning_rate=0.001),
+        metrics="accuracy",
     )
 
     history = model.fit(
@@ -194,4 +175,3 @@ if __name__ == "__main__":
     summary = pd.DataFrame(history.history)
     print(summary)
     summary.to_csv("./summary.csv")
-
