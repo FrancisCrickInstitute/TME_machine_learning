@@ -917,6 +917,9 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
 
                 # information at subtile level
                 for n_subtiles_per_row in all_n_subtiles_per_row_to_study:
+                    summary_subtile_rows = summary_subtile_rows_multiple_ns[
+                        n_subtiles_per_row
+                    ]
                     summary_subtile_rows = get_subtile_tumour_information(
                         slide,
                         scene,
