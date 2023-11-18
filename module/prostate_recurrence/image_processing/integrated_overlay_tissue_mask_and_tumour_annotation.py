@@ -683,6 +683,7 @@ def get_subtile_tumour_information(
     image_tile_name: str,
     image_tile: np.ndarray,
     summary_subtile_rows: List,
+    n_subtiles_per_row: int = 2,
 ) -> List:
     """get tissue and tumour proportions at subtile level
 
@@ -705,6 +706,8 @@ def get_subtile_tumour_information(
         with the header
         ["slide", "scene", "row", "col", "image_tile_name", "image_subtile_name",
          "tissue_fraction_of_tile_area", "tumour_fraction_of_tissue_area"]
+    n_subtiles_per_row : int
+        The number of subtiles per row for sub-division
 
     Returns
     -------
@@ -715,9 +718,10 @@ def get_subtile_tumour_information(
          "tissue_fraction_of_tile_area", "tumour_fraction_of_tissue_area"]
 
     """
-    subtile_size = image_tile.shape[0] // 2
-    for subtile_row in range(2):
-        for subtile_col in range(2):
+
+    subtile_size = image_tile.shape[0] // n_subtiles_per_row
+    for subtile_row in range(n_subtiles_per_row):
+        for subtile_col in range(n_subtiles_per_row):
             image_subtile_name = (
                 f"subtile_{str(subtile_row).zfill(5)}_{str(subtile_col).zfill(5)}"
             )
@@ -791,6 +795,7 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
         and subtile level, respectively.
     """
     image_dim = 2
+    all_n_subtiles_per_row_to_study = [2, 4, 8]
 
     tile_size_downscaled = int(tile_size * downscale_factor)
 
@@ -846,7 +851,10 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
         "tissue_fraction_of_tile_area",
         "tumour_fraction_of_tissue_area",
     ]
-    summary_subtile_rows: List[Tuple] = []
+    # summary_subtile_rows: List[Tuple] = []
+    summary_subtile_rows_multiple_ns = {}
+    for n_subtiles_per_row in all_n_subtiles_per_row_to_study:
+        summary_subtile_rows_multiple_ns[n_subtiles_per_row] = []
 
     for scene in scene_information_dataframe_complete.scene.unique():
         #     for scene in ['ScanRegion0']:
@@ -908,15 +916,20 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
                 )
 
                 # information at subtile level
-                summary_subtile_rows = get_subtile_tumour_information(
-                    slide,
-                    scene,
-                    irow,
-                    icol,
-                    image_tile_name,
-                    image_tile,
-                    summary_subtile_rows,
-                )
+                for n_subtiles_per_row in all_n_subtiles_per_row_to_study:
+                    summary_subtile_rows = get_subtile_tumour_information(
+                        slide,
+                        scene,
+                        irow,
+                        icol,
+                        image_tile_name,
+                        image_tile,
+                        summary_subtile_rows,
+                        n_subtiles_per_row,
+                    )
+                    summary_subtile_rows_multiple_ns[
+                        n_subtiles_per_row
+                    ] = summary_subtile_rows
 
                 # print(
                 #     f"tissue_percentage_of_tile_area = {tissue_percentage_of_tile_area:6.2%}; tumour_percentage_of_tissue_area = {tumour_percentage_of_tissue_area:6.2%}\n"
@@ -935,9 +948,6 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
                 )
 
     summary = pd.DataFrame(columns=summary_cols, data=summary_rows)
-    summary_subtile = pd.DataFrame(
-        columns=summary_subtile_cols, data=summary_subtile_rows
-    )
 
     output_directory = os.path.join(main_output_directory, slide)
     os.makedirs(output_directory, exist_ok=True)
@@ -946,12 +956,22 @@ def tiles_of_overlay_tumour_annotation_with_tissue_mask(
         os.path.join(output_directory, f"{slide}_summary_of_tumour_percentage.csv"),
         index=False,
     )
-    summary_subtile.to_csv(
-        os.path.join(
-            output_directory, f"{slide}_summary_of_tumour_percentage_in_subtiles.csv"
-        ),
-        index=False,
-    )
+
+    for n_subtiles_per_row in all_n_subtiles_per_row_to_study:
+        subtile_size = tile_size // n_subtiles_per_row
+
+        summary_subtile_rows = summary_subtile_rows_multiple_ns[n_subtiles_per_row]
+        summary_subtile = pd.DataFrame(
+            columns=summary_subtile_cols, data=summary_subtile_rows
+        )
+
+        summary_subtile.to_csv(
+            os.path.join(
+                output_directory,
+                f"{slide}_summary_of_tumour_percentage_in_subtiles_with_subtile_size_{subtile_size}.csv",
+            ),
+            index=False,
+        )
 
     return summary, summary_subtile
 
