@@ -43,8 +43,10 @@ function linear_colourmap(...
 %   International License.
 
 
-cm=[colourmap '(256)'];
-cm=eval(cm);
+
+cm = feval(colourmap, 256);%updated version - check works
+%cm=[colourmap '(256)'];old version
+%cm=eval(cm);
 cm=[cm;[1,1,1]];
 if isempty(max_input)
     max_input = max(input_matrix(:));

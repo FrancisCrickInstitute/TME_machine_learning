@@ -1,10 +1,13 @@
 function [output_image,output_length] = ...
     statistical_function_convolution(...
-    input_continuum,radius,...
+    input_continuum, ...
+    radius,...
     stats_function,...
     logical_boundary,...
     type,...
-    tissue_mask...
+    tissue_mask,...
+    disk_directory,...
+    approximate_disk...
     )
 %STATISTICAL_FUNCTION_CONVOLUTION carries out convolutions of statistical
 %functions on continuum matrices.
@@ -78,34 +81,16 @@ function [output_image,output_length] = ...
 %   This work is licensed under a Creative Commons Attribution 4.0 
 %   International License.
 
-[rows,cols]=size(input_continuum);
-input_continuum(~tissue_mask) = NaN;
-max_image_radius = floor(min(rows/2,cols/2))-1;
-radius=min(radius,max_image_radius);
-filtersize=2*radius+1;
-centrepoint=radius+1;
-centre_index=sub2ind([filtersize,filtersize], centrepoint, centrepoint);
-map=zeros(filtersize,filtersize);
-map(centrepoint,centrepoint)=1;
-SE=strel('disk',radius,0);
-map_inner=imdilate(map,SE);
-map_boundary=bwmorph(map_inner,'remove');
-inner_region=find(map_inner);
-outer_boundary=find(map_boundary);
-length_inner=length(inner_region);
-length_boundary=length(outer_boundary);
+if approximate_disk == 0
+    file_name = ['radius_', num2str(radius), '_true_circle.mat'];
+else
+    file_name = ['radius_', num2str(radius), '_approximate_circle.mat'];
+end
+disk_name = fullfile(disk_directory,file_name); 
+load(disk_name);
 
-
-horz_flip_input=flipud(input_continuum);
-horz_repeated_input = [horz_flip_input;input_continuum;horz_flip_input];
-vert_flip = horz_repeated_input(:,end:-1:1);
-full_periodic_image = [vert_flip,horz_repeated_input,vert_flip];
-[full_rows,full_cols] = size(full_periodic_image);
-analyzed_image = ...
-    full_periodic_image(...
-    rows+1-radius:2*rows+radius,...
-    cols+1-radius:2*cols+radius...
-    );
+input_continuum(~tissue_mask)=NaN;
+analyzed_image = padarray(input_continuum, [radius+1 radius+1],'symmetric'); 
 
 switch logical_boundary
     case 1
@@ -142,9 +127,9 @@ switch stats_function
     case{'std'}
         convolution_function = ['@(x) std(' input_vector ',''omitnan'')'];
     case{'min'}
-        convolution_function = ['@(x) min(' input_vector ',''omitnan'')'];
+        convolution_function = ['@(x) min(' input_vector ',[],''omitnan'')'];
     case{'max'}
-        convolution_function = ['@(x) max(' input_vector ',''omitnan'')'];
+        convolution_function = ['@(x) max(' input_vector ',[],''omitnan'')'];
     case{'lower quartile'}
         convolution_function = ['@(x) prctile(' input_vector ',25)'];
     case{'upper quartile'}
@@ -160,6 +145,7 @@ convolution_image = ...
     [filtersize filtersize],...
     eval(convolution_function)...
     );
+[rows,cols] = size(input_continuum);
 output_image = ...
     convolution_image(radius+1:rows+radius,radius+1:cols+radius);
 end

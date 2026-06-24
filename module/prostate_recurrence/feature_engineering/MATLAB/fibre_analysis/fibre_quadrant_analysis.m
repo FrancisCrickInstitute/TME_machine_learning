@@ -171,7 +171,7 @@ if tissue_proportion > 0.005
     ecm_index=find(ecm_mask);
     radial_distances = round([0.5,1,2,5,10,15,20,30,40]/0.22);
     sample_size=1000;
-    random_perm_index = randperm(length(ecm_index),sample_size);
+    random_perm_index = randperm(length(ecm_index),min(sample_size,length(ecm_index)));
     ecm_uniform_random_sample = ecm_index(random_perm_index);
     
     mass=image(ecm_index);
