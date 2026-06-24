@@ -72,13 +72,21 @@ column_lb = tile_column * round(total_columns/2) + 1;
 column_ub = min((tile_column+1) * round(total_columns/2),total_columns);
 
 discrete_gap_labels = discrete_gap_labels(row_lb:row_ub,column_lb:column_ub);
-unique_discrete_gap_labels=unique(discrete_gap_labels);
-unique_discrete_gap_labels=unique_discrete_gap_labels(unique_discrete_gap_labels>0);
+%unique_discrete_gap_labels=unique(discrete_gap_labels);
+%unique_discrete_gap_labels=unique_discrete_gap_labels(unique_discrete_gap_labels>0);
+%for relabel_index=1:length(unique_discrete_gap_labels)
+%    object_index=find(discrete_gap_labels==unique_discrete_gap_labels(relabel_index));
+%    discrete_gap_labels(object_index)=relabel_index;
+%end
 
-for relabel_index=1:length(unique_discrete_gap_labels)
-    object_index=find(discrete_gap_labels==unique_discrete_gap_labels(relabel_index));
-    discrete_gap_labels(object_index)=relabel_index;
-end
+
+
+mask = discrete_gap_labels > 0;
+[~, ~, new_labels] = unique(discrete_gap_labels(mask));
+discrete_gap_labels = zeros(size(discrete_gap_labels));
+discrete_gap_labels(mask) = new_labels;
+
+
 tissue_mask = logical(tissue_mask(row_lb:row_ub,column_lb:column_ub));
 ecm_mask = logical(ecm_mask(row_lb:row_ub,column_lb:column_ub));
 image = image(row_lb:row_ub,column_lb:column_ub);

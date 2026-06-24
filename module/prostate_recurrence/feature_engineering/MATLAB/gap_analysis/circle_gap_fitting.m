@@ -110,7 +110,7 @@ while isempty(radius_vector)==0
                 circle_function(rows,row_mid,cols,col_mid,radius);
         end
         bw_analyse(circlePixels)=1;
-        centroid_row(counter)=row_mid;
+        centroid_row(counter)=row_mid
         centroid_col(counter)=col_mid;
         circle_radius(counter)=radius+0.5; %Added 0.5 to account for a single pixel having radius 0.5
         %Should we take the discrete or continuous version of this?

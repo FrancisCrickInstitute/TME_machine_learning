@@ -36,7 +36,7 @@ for image_I=image_start:image_end
     ecm_mask = logical(logical(ecm_mask).*tissue_mask);
     ecm_mask = bwareaopen(ecm_mask,20,8);
 
-    if sum(ecm_mask(:))/length(tissue_mask(:)) >= 0.005%Threshold to accept tile
+  %  if sum(ecm_mask(:))/length(tissue_mask(:)) >= 0.005%Threshold to accept tile
         %Run CT-Fire
         
         image_folder
@@ -203,7 +203,9 @@ for image_I=image_start:image_end
                 gap_quadrant_analysis(variable_names,output_stats,tile_row,tile_column,row_dim,col_dim,save_directory,ecm_mask,tissue_mask,discrete_gap_labels,image_folder,image_file,image);
             end
         end
-    end
+%     else
+%         'The ecm proportion is below threshold. No fibres can be extracted and there will be one large gap covering the whole tile.'
+%     end
 
     
 end
