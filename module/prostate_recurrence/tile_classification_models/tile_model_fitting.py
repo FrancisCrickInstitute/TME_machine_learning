@@ -141,130 +141,291 @@ def calculate_and_save_shap(model, X_test, shap_save_path):
 
 
 
-def generate_tumour_tile_probabilities(fold_n):
+# ================================================================
+# Normal vs tumour
+# ================================================================
+
+def generate_tumour_tile_probabilities(fold_n, model_type):
 
     # ============================================================
-    # Paths and setup
+    # PATHS AND SETTINGS
     # ============================================================
 
-    feature_dir = '/nemo/project/proj-sahai-tme-ml/working/processed_data/feature_engineering/clinical/prostate/chiip_cohort/slide_20X/feature_analysis_v3/'
-    output_dir = '/nemo/project/proj-sahai-tme-ml/working/processed_data/feature_engineering/clinical/prostate/chiip_cohort/slide_20X/feature_analysis_v3/tumour_proportion_2026/xgboost_v2/'
-    code_dir = '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/prostate_recurrence/model_evaluation/tumour_proportion_2026/xgboost_v2/'
-
-    outer_fold_output_dir = output_dir + 'outer_fold_output/'
-    os.makedirs(outer_fold_output_dir, exist_ok=True)
-
-    max_rank = 1
-
-
-    # ============================================================
-    # Load hyperparameters and select model
-    # ============================================================
-
-    hyperparameters_df = pd.read_csv(
-        os.path.join(
-            code_dir,
-            'xg_quad_1000_normal_vs_tumour_nested_5_folds_v2_runkey.txt'
-        ),
-        sep=' ',
-        header=None
+    feature_dir = (
+        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
+        'feature_engineering/clinical/prostate/chiip_cohort/slide_20X/'
+        'feature_analysis_v3/'
     )
-
-    hyperparameters_df.drop(columns=[10], inplace=True)
-
-    hyperparameters_df = hyperparameters_df.rename(
-        columns={
-            0: 'name',
-            1: 'fold',
-            2: 'n_estimator',
-            3: 'max_depth',
-            4: 'learning_rate',
-            5: 'subsample',
-            6: 'colsample_bytree',
-            7: 'gamma',
-            8: 'scale_pos_weight',
-            9: 'min_child_weight'
-        }
-    )
-
-    hyperparameters_df = hyperparameters_df[
-        hyperparameters_df.fold == 0
-    ]
-
-    hyperparameters_df = hyperparameters_df.loc[0:3888]
-
-    valid_runs = set(hyperparameters_df.index)
-    #CHECK THIS FOR OUTPUT FROM OTHER SCRIPT HERE##
-    csv_pattern = (
-        output_dir
-        + 'xgboost_normal_vs_tumour_quadrant_1000_total_outer_folds_5_'
-        + 'outer_fold_test_'
-        + str(fold_n).zfill(5)
-        + '_run_*_roc_auc_tile_xgboosttumour_gr_0_rfe_mean_test_scores.csv'
-    )
-
-    score_csv_paths = glob(csv_pattern)
-    score_csv_paths = sorted(score_csv_paths)
-
-    run_id, rfe_model = select_best_xgboost_model(
-        score_csv_paths,
-        valid_runs
-    )
-
-
-    # ============================================================
-    # Build XGBoost model
-    # ============================================================
-
-    xgb_params = {
-        'objective': 'binary:logistic',
-        'eval_metric': 'logloss',
-        'use_label_encoder': False,
-        'n_jobs': -1,
-        'random_state': 8,
-        'n_estimators': hyperparameters_df.loc[run_id].n_estimator,
-        'max_depth': hyperparameters_df.loc[run_id].max_depth,
-        'learning_rate': hyperparameters_df.loc[run_id].learning_rate,
-        'subsample': hyperparameters_df.loc[run_id].subsample,
-        'colsample_bytree': hyperparameters_df.loc[run_id].colsample_bytree,
-        'gamma': hyperparameters_df.loc[run_id].gamma,
-        'scale_pos_weight': hyperparameters_df.loc[run_id].scale_pos_weight,
-        'min_child_weight': hyperparameters_df.loc[run_id].min_child_weight
-    }
-
-    for param, value in xgb_params.items():
-
-        print(param)
-        print(value)
-
-        if isinstance(value, str):
-            try:
-                xgb_params[param] = float(value)
-            except ValueError:
-                pass
-
-    xgb_model = XGBClassifier(**xgb_params)
-
-
-    # ============================================================
-    # Load and prepare data
-    # ============================================================
-
-    tissue_proportion = 0.7
-    lower_tumour_proportion = 0.1
-    upper_tumour_proportion = 0.9
 
     data_path = (
         feature_dir
         + 'updated_tumour_boundary_quadrants_double_are_recurrent_df.csv'
     )
 
+    tissue_proportion = 0.7
+    lower_tumour_proportion = 0.1
+    upper_tumour_proportion = 0.9
+    max_rank = 1
+
+
+    # ============================================================
+    # MODEL-SPECIFIC PATHS AND MODEL SELECTION
+    # ============================================================
+
+    if model_type == 'forest':
+
+        output_dir = (
+            feature_dir
+            + 'tumour_proportion_2026/forest_v2/'
+        )
+
+        code_dir = (
+            '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
+            'prostate_recurrence/model_evaluation/'
+            'tumour_proportion_2026/forest_v2/'
+        )
+
+        hyperparameters_df = pd.read_csv(
+            os.path.join(
+                code_dir,
+                'quad_1000_normal_vs_tumour_nested_5_folds_v2_runkey.txt'
+            ),
+            sep=' ',
+            header=None
+        )
+
+        hyperparameters_df.drop(
+            columns=[7],
+            inplace=True
+        )
+
+        hyperparameters_df = hyperparameters_df.rename(
+            columns={
+                0: 'name',
+                1: 'fold',
+                2: 'n_estimator',
+                3: 'max_depth',
+                4: 'min_samples_split',
+                5: 'min_samples_leaf',
+                6: 'max_feature'
+            }
+        )
+
+        hyperparameters_df = hyperparameters_df[
+            hyperparameters_df.fold == 0
+        ]
+
+        hyperparameters_df = hyperparameters_df.loc[0:162]
+
+        csv_pattern = os.path.join(
+            output_dir,
+            'rf_normal_vs_tumour_quadrant_1000_total_outer_folds_5_'
+            'outer_fold_test_'
+            + str(fold_n).zfill(5)
+            + '_run_*_roc_auc_seed_31_tile_foresttumour_gr_0_'
+            'rfe_mean_test_scores.csv'
+        )
+
+        score_csv_paths = sorted(
+            glob(csv_pattern)
+        )
+
+        test_score = []
+        candidate_csv_paths = []
+
+        for csv_path in score_csv_paths:
+
+            df_score = pd.read_csv(
+                csv_path,
+                low_memory=False
+            )
+
+            score = np.max(
+                df_score.Mean_Test_Scores
+            )
+
+            if not test_score or score >= np.max(test_score):
+                test_score.append(score)
+                candidate_csv_paths.append(csv_path)
+
+        sav_file = candidate_csv_paths[-1].replace(
+            '_mean_test_scores.csv',
+            '.sav'
+        )
+
+        match = re.search(
+            r"(?<=run_)\d+(?=_roc)",
+            candidate_csv_paths[-1]
+        )
+
+        run_id = int(match.group())
+
+        with open(sav_file, 'rb') as f:
+            rfe_model = pickle.load(f)
+
+        model_params = {
+            'n_estimators': hyperparameters_df.loc[run_id].n_estimator,
+            'max_depth': hyperparameters_df.loc[run_id].max_depth,
+            'min_samples_split': hyperparameters_df.loc[run_id].min_samples_split,
+            'min_samples_leaf': hyperparameters_df.loc[run_id].min_samples_leaf,
+            'max_features': hyperparameters_df.loc[run_id].max_feature,
+            'random_state': 8,
+            'class_weight': 'balanced'
+        }
+
+        for param, value in model_params.items():
+
+            if isinstance(value, str):
+
+                try:
+                    model_params[param] = float(value)
+
+                except ValueError:
+                    pass
+
+        model = RandomForestClassifier(
+            **model_params
+        )
+
+
+    elif model_type == 'xgboost':
+
+        output_dir = (
+            feature_dir
+            + 'tumour_proportion_2026/xgboost_v2/'
+        )
+
+        code_dir = (
+            '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
+            'prostate_recurrence/model_evaluation/'
+            'tumour_proportion_2026/xgboost_v2/'
+        )
+
+        hyperparameters_df = pd.read_csv(
+            os.path.join(
+                code_dir,
+                'xg_quad_1000_normal_vs_tumour_nested_5_folds_v2_runkey.txt'
+            ),
+            sep=' ',
+            header=None
+        )
+
+        hyperparameters_df.drop(
+            columns=[10],
+            inplace=True
+        )
+
+        hyperparameters_df = hyperparameters_df.rename(
+            columns={
+                0: 'name',
+                1: 'fold',
+                2: 'n_estimator',
+                3: 'max_depth',
+                4: 'learning_rate',
+                5: 'subsample',
+                6: 'colsample_bytree',
+                7: 'gamma',
+                8: 'scale_pos_weight',
+                9: 'min_child_weight'
+            }
+        )
+
+        hyperparameters_df = hyperparameters_df[
+            hyperparameters_df.fold == 0
+        ]
+
+        hyperparameters_df = hyperparameters_df.loc[0:3888]
+
+        valid_runs = set(
+            hyperparameters_df.index
+        )
+
+        csv_pattern = os.path.join(
+            output_dir,
+            'xgboost_normal_vs_tumour_quadrant_1000_total_outer_folds_5_'
+            'outer_fold_test_'
+            + str(fold_n).zfill(5)
+            + '_run_*_roc_auc_tile_xgboosttumour_gr_0_'
+            'rfe_mean_test_scores.csv'
+        )
+
+        score_csv_paths = sorted(
+            glob(csv_pattern)
+        )
+
+        run_id, rfe_model = select_best_xgboost_model(
+            score_csv_paths,
+            valid_runs
+        )
+
+        model_params = {
+            'objective': 'binary:logistic',
+            'eval_metric': 'logloss',
+            'use_label_encoder': False,
+            'n_jobs': -1,
+            'random_state': 8,
+            'n_estimators': hyperparameters_df.loc[run_id].n_estimator,
+            'max_depth': hyperparameters_df.loc[run_id].max_depth,
+            'learning_rate': hyperparameters_df.loc[run_id].learning_rate,
+            'subsample': hyperparameters_df.loc[run_id].subsample,
+            'colsample_bytree': hyperparameters_df.loc[run_id].colsample_bytree,
+            'gamma': hyperparameters_df.loc[run_id].gamma,
+            'scale_pos_weight': hyperparameters_df.loc[run_id].scale_pos_weight,
+            'min_child_weight': hyperparameters_df.loc[run_id].min_child_weight
+        }
+
+        for param, value in model_params.items():
+
+            print(param)
+            print(value)
+
+            if isinstance(value, str):
+
+                try:
+                    model_params[param] = float(value)
+
+                except ValueError:
+                    pass
+
+        model = XGBClassifier(
+            **model_params
+        )
+
+
+    else:
+
+        raise ValueError(
+            "model_type must be either 'forest' or 'xgboost'"
+        )
+
+
+    # ============================================================
+    # OUTPUT DIRECTORY
+    # ============================================================
+
+    outer_fold_output_dir = (
+        output_dir
+        + 'outer_fold_output/'
+    )
+
+    os.makedirs(
+        outer_fold_output_dir,
+        exist_ok=True
+    )
+
+
+    # ============================================================
+    # LOAD AND PREPARE DATA
+    # ============================================================
+
     df = pd.read_csv(
         data_path,
         low_memory=False
     )
 
-    df = df[df['tissue_proportion'] >= tissue_proportion]
+    df = df[
+        df['tissue_proportion'] >= tissue_proportion
+    ]
 
     df = df[
         (df['tumour_proportion'] >= upper_tumour_proportion)
@@ -276,11 +437,15 @@ def generate_tumour_tile_probabilities(fold_n):
         | (df['gleason'] == 2)
     ]
 
-    df = df.reset_index(drop=True)
+    df = df.reset_index(
+        drop=True
+    )
 
     print(df.head())
 
-    patient_ids = list(df.patient_id.unique())
+    patient_ids = list(
+        df.patient_id.unique()
+    )
 
     conditions = [
         (df['gleason'] == 1) & (df['case'] == 1.0),
@@ -289,20 +454,18 @@ def generate_tumour_tile_probabilities(fold_n):
         (df['gleason'] == 2) & (df['case'] == 0.0)
     ]
 
-    values = range(0, 4)
-
     df['clinical_score'] = np.select(
         conditions,
-        values
+        range(0, 4)
     )
 
     df.loc[
-        df['tumour_proportion'] <= 0.1,
+        df['tumour_proportion'] <= lower_tumour_proportion,
         'tumour_proportion'
     ] = 0
 
     df.loc[
-        df['tumour_proportion'] >= 0.9,
+        df['tumour_proportion'] >= upper_tumour_proportion,
         'tumour_proportion'
     ] = 1
 
@@ -314,11 +477,15 @@ def generate_tumour_tile_probabilities(fold_n):
     for patient_id in patient_ids:
 
         gleasons.append(
-            df[df.patient_id == patient_id].gleason.unique()[0]
+            df[
+                df.patient_id == patient_id
+            ].gleason.unique()[0]
         )
 
         cases.append(
-            df[df.patient_id == patient_id].case.unique()[0]
+            df[
+                df.patient_id == patient_id
+            ].case.unique()[0]
         )
 
         clinical_scores.append(
@@ -328,7 +495,11 @@ def generate_tumour_tile_probabilities(fold_n):
         )
 
         total_tiles.append(
-            len(df[df.patient_id == patient_id].case)
+            len(
+                df[
+                    df.patient_id == patient_id
+                ].case
+            )
         )
 
     patient_df = pd.DataFrame({
@@ -342,8 +513,14 @@ def generate_tumour_tile_probabilities(fold_n):
     stratification_df = (
         patient_df
         .sort_values(
-            by=['clinical_score', 'total_tiles'],
-            ascending=[True, False]
+            by=[
+                'clinical_score',
+                'total_tiles'
+            ],
+            ascending=[
+                True,
+                False
+            ]
         )
         .copy()
         .reset_index()
@@ -351,10 +528,13 @@ def generate_tumour_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Patient-level stratification
+    # PATIENT-LEVEL STRATIFICATION
     # ============================================================
 
-    folds_csv_file = code_dir + 'outer_folds_data.csv'
+    folds_csv_file = (
+        code_dir
+        + 'outer_folds_data.csv'
+    )
 
     (
         stratification_df,
@@ -369,14 +549,14 @@ def generate_tumour_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Train/test split
+    # TRAIN/TEST SPLIT
     # ============================================================
 
     df_train = df[
         fold_assignments != fold_n
-    ]
-
-    df_train = df_train.reset_index(drop=True)
+    ].reset_index(
+        drop=True
+    )
 
     X_train = df_train.drop(
         [
@@ -396,13 +576,15 @@ def generate_tumour_tile_probabilities(fold_n):
         axis=1
     ).copy()
 
-    y_train = df_train["tumour_proportion"]
+    y_train = df_train[
+        'tumour_proportion'
+    ]
 
     df_test = df[
         fold_assignments == fold_n
-    ]
-
-    df_test = df_test.reset_index(drop=True)
+    ].reset_index(
+        drop=True
+    )
 
     X_test = df_test.drop(
         [
@@ -422,7 +604,14 @@ def generate_tumour_tile_probabilities(fold_n):
         axis=1
     ).copy()
 
-    y_test = df_test["tumour_proportion"]
+    y_test = df_test[
+        'tumour_proportion'
+    ]
+
+
+    # ============================================================
+    # RFE FEATURE SELECTION
+    # ============================================================
 
     X_train_rfe, X_test_rfe = select_rfe_features(
         X_train,
@@ -433,11 +622,11 @@ def generate_tumour_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Fit model and predict
+    # FIT MODEL AND PREDICT
     # ============================================================
 
     test_probabilities = fit_and_predict(
-        xgb_model,
+        model,
         X_train_rfe,
         y_train,
         X_test_rfe
@@ -445,7 +634,7 @@ def generate_tumour_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Save tile-level predictions
+    # SAVE TILE-LEVEL PREDICTIONS
     # ============================================================
 
     tumour_probabilities_df = df_test[
@@ -474,16 +663,20 @@ def generate_tumour_tile_probabilities(fold_n):
         + 'tile_level_tumour_probabilities.csv'
     )
 
-    print(outer_fold_output_dir + output_filename)
+    print(
+        outer_fold_output_dir
+        + output_filename
+    )
 
     tumour_probabilities_df.to_csv(
-        outer_fold_output_dir + output_filename,
+        outer_fold_output_dir
+        + output_filename,
         index=False
     )
 
 
     # ============================================================
-    # Calculate ROC AUC
+    # CALCULATE ROC AUC
     # ============================================================
 
     test_roc_auc = roc_auc_score(
@@ -496,42 +689,50 @@ def generate_tumour_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Calculate and save SHAP values
+    # CALCULATE AND SAVE SHAP VALUES
     # ============================================================
 
     print("Fitting SHAP values...")
 
-    shap_output_path = os.path.join(
+    shap_save_path = os.path.join(
         outer_fold_output_dir,
         f"outer_fold_{str(fold_n).zfill(5)}_shap_output.pkl"
     )
 
     calculate_and_save_shap(
-        xgb_model,
+        model,
         X_test_rfe,
-        shap_output_path
+        shap_save_path
     )
+
 
 
 # ================================================================
 # Gleason 3 vs 4
 # ================================================================
 
-def generate_gleason_tile_probabilities(fold_n):
+def generate_gleason_tile_probabilities(fold_n, model_type):
 
     # ============================================================
-    # Paths and setup
+    # PATHS AND SETTINGS
     # ============================================================
 
-    feature_dir = '/nemo/project/proj-sahai-tme-ml/working/processed_data/feature_engineering/clinical/prostate/chiip_cohort/slide_20X/feature_analysis_v3/'
-    output_dir = '/nemo/project/proj-sahai-tme-ml/working/processed_data/feature_engineering/clinical/prostate/chiip_cohort/slide_20X/feature_analysis_v3/gleason_3_vs_4_with_sara/xgboost_v2/'
-    code_dir = '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/prostate_recurrence/model_evaluation/gleason_3_vs_4_with_sara/xgboost_v2/'
-    data_path = feature_dir + 'updated_tumour_boundary_quadrants_double_are_recurrent_df.csv'
-    gleason_annotation_parent_dir = '/nemo/project/proj-sahai-tme-ml/working/processed_data/pre_processed_data/clinical/prostate/chiip_cohort/overlay_tissue_tumour_gleason_annotations/'
+    feature_dir = (
+        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
+        'feature_engineering/clinical/prostate/chiip_cohort/slide_20X/'
+        'feature_analysis_v3/'
+    )
 
-    outer_fold_output_dir = output_dir + 'outer_fold_output/'
-    os.makedirs(outer_fold_output_dir, exist_ok=True)
+    data_path = (
+        feature_dir
+        + 'updated_tumour_boundary_quadrants_double_are_recurrent_df.csv'
+    )
 
+    gleason_annotation_parent_dir = (
+        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
+        'pre_processed_data/clinical/prostate/chiip_cohort/'
+        'overlay_tissue_tumour_gleason_annotations/'
+    )
 
     tumour_proportion = 0.7
     tissue_proportion = 0.7
@@ -539,95 +740,250 @@ def generate_gleason_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Load hyperparameters and select model
+    # MODEL-SPECIFIC PATHS AND MODEL SELECTION
     # ============================================================
 
-    hyperparameters_df = pd.read_csv(
-        os.path.join(
-            code_dir,
-            'xg_quad_1000_gleason_3_vs_4_nested_5_folds_v2_runkey.txt'
-        ),
-        sep=' ',
-        header=None
-    )
+    if model_type == 'forest':
 
-    hyperparameters_df.drop(columns=[10], inplace=True)
+        output_dir = (
+            feature_dir
+            + 'gleason_3_vs_4_with_sara/v2/'
+        )
 
-    hyperparameters_df = hyperparameters_df.rename(
-        columns={
-            0: 'name',
-            1: 'fold',
-            2: 'n_estimator',
-            3: 'max_depth',
-            4: 'learning_rate',
-            5: 'subsample',
-            6: 'colsample_bytree',
-            7: 'gamma',
-            8: 'scale_pos_weight',
-            9: 'min_child_weight'
+        code_dir = (
+            '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
+            'prostate_recurrence/model_evaluation/'
+            'gleason_3_vs_4_with_sara/v2/'
+        )
+
+        hyperparameters_df = pd.read_csv(
+            os.path.join(
+                code_dir,
+                'quad_1000_gleason_3_vs_4_nested_5_folds_v2_runkey.txt'
+            ),
+            sep=' ',
+            header=None
+        )
+
+        hyperparameters_df.drop(
+            columns=[7],
+            inplace=True
+        )
+
+        hyperparameters_df = hyperparameters_df.rename(
+            columns={
+                0: 'name',
+                1: 'fold',
+                2: 'n_estimator',
+                3: 'max_depth',
+                4: 'min_samples_split',
+                5: 'min_samples_leaf',
+                6: 'max_feature'
+            }
+        )
+
+        hyperparameters_df = hyperparameters_df[
+            hyperparameters_df.fold == 0
+        ]
+
+        hyperparameters_df = hyperparameters_df.loc[0:384]
+
+        csv_pattern = os.path.join(
+            output_dir,
+            'rf_gleason_3_vs_4_quadrant_1000_total_outer_folds_5_'
+            'outer_fold_test_'
+            + str(fold_n).zfill(5)
+            + '_run_*_roc_auc_seed_31_tile_foresttumour_gr_0_7_'
+            'rfe_mean_test_scores.csv'
+        )
+
+        score_csv_paths = sorted(
+            glob(csv_pattern)
+        )
+
+        # Use the existing selection logic directly.
+        test_score = []
+        candidate_csv_paths = []
+
+        for csv_path in score_csv_paths:
+
+            df_score = pd.read_csv(
+                csv_path,
+                low_memory=False
+            )
+
+            score = np.max(
+                df_score.Mean_Test_Scores
+            )
+
+            if not test_score or score >= np.max(test_score):
+                test_score.append(score)
+                candidate_csv_paths.append(csv_path)
+
+        sav_file = candidate_csv_paths[-1].replace(
+            '_mean_test_scores.csv',
+            '.sav'
+        )
+
+        match = re.search(
+            r"(?<=run_)\d+(?=_roc)",
+            candidate_csv_paths[-1]
+        )
+
+        run_id = int(match.group())
+
+        with open(sav_file, 'rb') as f:
+            rfe_model = pickle.load(f)
+
+        model_params = {
+            'n_estimators': hyperparameters_df.loc[run_id].n_estimator,
+            'max_depth': hyperparameters_df.loc[run_id].max_depth,
+            'min_samples_split': hyperparameters_df.loc[run_id].min_samples_split,
+            'min_samples_leaf': hyperparameters_df.loc[run_id].min_samples_leaf,
+            'max_features': hyperparameters_df.loc[run_id].max_feature,
+            'random_state': 8,
+            'class_weight': 'balanced'
         }
-    )
 
-    hyperparameters_df = hyperparameters_df[
-        hyperparameters_df.fold == 0
-    ]
+        for param, value in model_params.items():
 
-    hyperparameters_df = hyperparameters_df.loc[0:4374]
+            if isinstance(value, str):
 
-    valid_runs = set(hyperparameters_df.index)
+                try:
+                    model_params[param] = float(value)
 
-    csv_pattern = os.path.join(
-        output_dir,
-        'xgboost_gleason_3_vs_4_quadrant_1000_total_outer_folds_5_outer_fold_test_'
-        + str(fold_n).zfill(5)
-        + '_run_*_roc_auc_tile_xgboosttumour_gr_0_7_rfe_mean_test_scores.csv'
-    )
+                except ValueError:
+                    pass
 
-    score_csv_paths = glob(csv_pattern)
-    score_csv_paths = sorted(score_csv_paths)
+        model = RandomForestClassifier(
+            **model_params
+        )
 
-    run_id, rfe_model = select_best_xgboost_model(
-        score_csv_paths,
-        valid_runs
+
+    elif model_type == 'xgboost':
+
+        output_dir = (
+            feature_dir
+            + 'gleason_3_vs_4_with_sara/xgboost_v2/'
+        )
+
+        code_dir = (
+            '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
+            'prostate_recurrence/model_evaluation/'
+            'gleason_3_vs_4_with_sara/xgboost_v2/'
+        )
+
+        hyperparameters_df = pd.read_csv(
+            os.path.join(
+                code_dir,
+                'xg_quad_1000_gleason_3_vs_4_nested_5_folds_v2_runkey.txt'
+            ),
+            sep=' ',
+            header=None
+        )
+
+        hyperparameters_df.drop(
+            columns=[10],
+            inplace=True
+        )
+
+        hyperparameters_df = hyperparameters_df.rename(
+            columns={
+                0: 'name',
+                1: 'fold',
+                2: 'n_estimator',
+                3: 'max_depth',
+                4: 'learning_rate',
+                5: 'subsample',
+                6: 'colsample_bytree',
+                7: 'gamma',
+                8: 'scale_pos_weight',
+                9: 'min_child_weight'
+            }
+        )
+
+        hyperparameters_df = hyperparameters_df[
+            hyperparameters_df.fold == 0
+        ]
+
+        hyperparameters_df = hyperparameters_df.loc[0:4374]
+
+        valid_runs = set(
+            hyperparameters_df.index
+        )
+
+        csv_pattern = os.path.join(
+            output_dir,
+            'xgboost_gleason_3_vs_4_quadrant_1000_total_outer_folds_5_'
+            'outer_fold_test_'
+            + str(fold_n).zfill(5)
+            + '_run_*_roc_auc_tile_xgboosttumour_gr_0_7_'
+            'rfe_mean_test_scores.csv'
+        )
+
+        score_csv_paths = sorted(
+            glob(csv_pattern)
+        )
+
+        run_id, rfe_model = select_best_xgboost_model(
+            score_csv_paths,
+            valid_runs
+        )
+
+        model_params = {
+            'objective': 'binary:logistic',
+            'eval_metric': 'logloss',
+            'use_label_encoder': False,
+            'n_jobs': -1,
+            'random_state': 8,
+            'n_estimators': hyperparameters_df.loc[run_id].n_estimator,
+            'max_depth': hyperparameters_df.loc[run_id].max_depth,
+            'learning_rate': hyperparameters_df.loc[run_id].learning_rate,
+            'subsample': hyperparameters_df.loc[run_id].subsample,
+            'colsample_bytree': hyperparameters_df.loc[run_id].colsample_bytree,
+            'gamma': hyperparameters_df.loc[run_id].gamma,
+            'scale_pos_weight': hyperparameters_df.loc[run_id].scale_pos_weight,
+            'min_child_weight': hyperparameters_df.loc[run_id].min_child_weight
+        }
+
+        for param, value in model_params.items():
+
+            print(param)
+            print(value)
+
+            if isinstance(value, str):
+
+                try:
+                    model_params[param] = float(value)
+
+                except ValueError:
+                    pass
+
+        model = XGBClassifier(
+            **model_params
+        )
+
+
+    else:
+
+        raise ValueError(
+            "model_type must be either 'forest' or 'xgboost'"
+        )
+
+
+    # ============================================================
+    # OUTPUT DIRECTORY
+    # ============================================================
+
+    outer_fold_output_dir = output_dir + 'outer_fold_output/'
+    os.makedirs(
+        outer_fold_output_dir,
+        exist_ok=True
     )
 
 
     # ============================================================
-    # Build XGBoost model
-    # ============================================================
-
-    xgb_params = {
-        'objective': 'binary:logistic',
-        'eval_metric': 'logloss',
-        'use_label_encoder': False,
-        'n_jobs': -1,
-        'random_state': 8,
-        'n_estimators': hyperparameters_df.loc[run_id].n_estimator,
-        'max_depth': hyperparameters_df.loc[run_id].max_depth,
-        'learning_rate': hyperparameters_df.loc[run_id].learning_rate,
-        'subsample': hyperparameters_df.loc[run_id].subsample,
-        'colsample_bytree': hyperparameters_df.loc[run_id].colsample_bytree,
-        'gamma': hyperparameters_df.loc[run_id].gamma,
-        'scale_pos_weight': hyperparameters_df.loc[run_id].scale_pos_weight,
-        'min_child_weight': hyperparameters_df.loc[run_id].min_child_weight
-    }
-
-    for param, value in xgb_params.items():
-
-        print(param)
-        print(value)
-
-        if isinstance(value, str):
-            try:
-                xgb_params[param] = float(value)
-            except ValueError:
-                pass
-
-    xgb_model = XGBClassifier(**xgb_params)
-
-
-    # ============================================================
-    # Load and prepare data
+    # LOAD AND PREPARE DATA
     # ============================================================
 
     feature_df = pd.read_csv(
@@ -635,7 +991,9 @@ def generate_gleason_tile_probabilities(fold_n):
         low_memory=False
     )
 
-    feature_df = feature_df.reset_index(drop=True)
+    feature_df = feature_df.reset_index(
+        drop=True
+    )
 
     conditions = [
         (feature_df['gleason'] == 0) & (feature_df['case'] == 1.0),
@@ -648,11 +1006,9 @@ def generate_gleason_tile_probabilities(fold_n):
         (feature_df['gleason'] == 3) & (feature_df['case'] == 0.0)
     ]
 
-    values = range(0, 8)
-
     feature_df['clinical_score'] = np.select(
         conditions,
-        values
+        range(0, 8)
     )
 
     gleason_6_8_df = feature_df[
@@ -683,12 +1039,17 @@ def generate_gleason_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Load Gleason annotation data
+    # LOAD GLEASON ANNOTATION DATA
     # ============================================================
 
     csv_files = [
-        os.path.join(gleason_annotation_parent_dir, f)
-        for f in os.listdir(gleason_annotation_parent_dir)
+        os.path.join(
+            gleason_annotation_parent_dir,
+            f
+        )
+        for f in os.listdir(
+            gleason_annotation_parent_dir
+        )
         if f.endswith('_1000.csv')
     ]
 
@@ -698,8 +1059,9 @@ def generate_gleason_tile_probabilities(fold_n):
 
         print(f"Loading: {file_path}")
 
-        df = pd.read_csv(file_path)
-        all_dfs.append(df)
+        all_dfs.append(
+            pd.read_csv(file_path)
+        )
 
     combined_df = pd.concat(
         all_dfs,
@@ -708,8 +1070,10 @@ def generate_gleason_tile_probabilities(fold_n):
 
     combined_df.rename(
         columns={
-            'tumour_gleason4_fraction_of_tissue_area': 'gleason_4_proportion',
-            'tumour_gleason3_fraction_of_tissue_area': 'gleason_3_proportion'
+            'tumour_gleason4_fraction_of_tissue_area':
+                'gleason_4_proportion',
+            'tumour_gleason3_fraction_of_tissue_area':
+                'gleason_3_proportion'
         },
         inplace=True
     )
@@ -724,8 +1088,16 @@ def generate_gleason_tile_probabilities(fold_n):
 
     merged_7_df = gleason_7_df.merge(
         gleason_scoring_df,
-        on=['slide_id', 'scene', 'tile', 'quadrant'],
-        suffixes=('_df7', '_df_scoring'),
+        on=[
+            'slide_id',
+            'scene',
+            'tile',
+            'quadrant'
+        ],
+        suffixes=(
+            '_df7',
+            '_df_scoring'
+        ),
         how='inner'
     )
 
@@ -759,18 +1131,25 @@ def generate_gleason_tile_probabilities(fold_n):
     )
 
     gleason_df = pd.concat(
-        [merged_7_df, gleason_6_8_df],
+        [
+            merged_7_df,
+            gleason_6_8_df
+        ],
         ignore_index=True
     )
 
     gleason_df.drop(
-        columns=['area', 'decision', 'gleason_3'],
+        columns=[
+            'area',
+            'decision',
+            'gleason_3'
+        ],
         inplace=True
     )
 
 
     # ============================================================
-    # Patient-level stratification
+    # PATIENT-LEVEL STRATIFICATION
     # ============================================================
 
     unique_patients = gleason_df['patient_id'].unique()
@@ -804,14 +1183,24 @@ def generate_gleason_tile_probabilities(fold_n):
             "clinical_score": clinical_score
         })
 
-    patient_df = pd.DataFrame(patient_records)
+    patient_df = pd.DataFrame(
+        patient_records
+    )
 
     stratification_df = (
         patient_df
         .copy()
         .sort_values(
-            by=['clinical_score', 'total_gleason_3', 'total_tiles'],
-            ascending=[True, False, False]
+            by=[
+                'clinical_score',
+                'total_gleason_3',
+                'total_tiles'
+            ],
+            ascending=[
+                True,
+                False,
+                False
+            ]
         )
         .reset_index()
     )
@@ -831,16 +1220,12 @@ def generate_gleason_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Train/test split
+    # TRAIN/TEST SPLIT
     # ============================================================
 
-    df = gleason_df.copy()
-
-    df_train = df[
+    df_train = gleason_df[
         fold_assignments != fold_n
-    ]
-
-    df_train = df_train.reset_index(drop=True)
+    ].reset_index(drop=True)
 
     X_train = df_train.drop(
         [
@@ -861,11 +1246,9 @@ def generate_gleason_tile_probabilities(fold_n):
 
     y_train = df_train['gleason_4']
 
-    df_test = df[
+    df_test = gleason_df[
         fold_assignments == fold_n
-    ]
-
-    df_test = df_test.reset_index(drop=True)
+    ].reset_index(drop=True)
 
     X_test = df_test.drop(
         [
@@ -886,6 +1269,11 @@ def generate_gleason_tile_probabilities(fold_n):
 
     y_test = df_test['gleason_4']
 
+
+    # ============================================================
+    # RFE FEATURE SELECTION
+    # ============================================================
+
     X_train_rfe, X_test_rfe = select_rfe_features(
         X_train,
         X_test,
@@ -893,13 +1281,16 @@ def generate_gleason_tile_probabilities(fold_n):
         max_rank
     )
 
+    print('number of columns: ')
+    print(X_train_rfe.shape[1])
+
 
     # ============================================================
-    # Fit model and predict
+    # FIT MODEL AND PREDICT
     # ============================================================
 
     test_probabilities = fit_and_predict(
-        xgb_model,
+        model,
         X_train_rfe,
         y_train,
         X_test_rfe
@@ -907,7 +1298,7 @@ def generate_gleason_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Save tile-level predictions
+    # SAVE TILE-LEVEL PREDICTIONS
     # ============================================================
 
     gleason_probabilities_df = df_test[
@@ -937,7 +1328,9 @@ def generate_gleason_tile_probabilities(fold_n):
         + 'tile_level_gleason_probabilities.csv'
     )
 
-    print(outer_fold_output_dir + output_filename)
+    print(
+        outer_fold_output_dir + output_filename
+    )
 
     gleason_probabilities_df.to_csv(
         outer_fold_output_dir + output_filename,
@@ -946,7 +1339,7 @@ def generate_gleason_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Calculate ROC AUC
+    # CALCULATE ROC AUC
     # ============================================================
 
     test_roc_auc = roc_auc_score(
@@ -959,421 +1352,26 @@ def generate_gleason_tile_probabilities(fold_n):
 
 
     # ============================================================
-    # Calculate and save SHAP values
+    # CALCULATE AND SAVE SHAP VALUES
     # ============================================================
 
     print("Fitting SHAP values...")
 
-    shap_output_path = os.path.join(
+    shap_save_path = os.path.join(
         outer_fold_output_dir,
         f"outer_fold_{str(fold_n).zfill(5)}_shap_output.pkl"
     )
 
     calculate_and_save_shap(
-        xgb_model,
+        model,
         X_test_rfe,
-        shap_output_path
+        shap_save_path
     )
-
 
 # ================================================================
 # Recurrent
 # ================================================================
 
-def generate_recurrent_tile_probabilities(bootstrap, fold_n):
-
-    # ============================================================
-    # Paths and setup
-    # ============================================================
-
-    outer_fold_output_dir = '/nemo/project/proj-sahai-tme-ml/working/processed_data/feature_engineering/clinical/prostate/chiip_cohort/slide_20X/feature_analysis_v3/rfe_runs/gleason_7_quad_1000_v8a_patient_level_svm_plus_tile_threshold_f1score_removed_xgboost_outer_fold_' + str(bootstrap)
-
-    os.makedirs(outer_fold_output_dir, exist_ok=True)
-
-    data_exploration_module_path = os.path.abspath(
-        os.path.join(
-            '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/prostate_recurrence/data_exploration/'
-        )
-    )
-
-    if data_exploration_module_path not in sys.path:
-        sys.path.append(data_exploration_module_path)
-
-
-    model_results_dir = '/nemo/project/proj-sahai-tme-ml/working/processed_data/feature_engineering/clinical/prostate/chiip_cohort/slide_20X/feature_analysis_v3/rfe_runs/gleason_7_quad_1000_v8a_ambiguous_removed_bootstrap_xgboost/'
-    feature_dir = '/nemo/project/proj-sahai-tme-ml/working/processed_data/feature_engineering/clinical/prostate/chiip_cohort/slide_20X/feature_analysis_v3/'
-    code_dir = '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/prostate_recurrence/model_evaluation/recurrence_status_tile/rfe_runs/gleason_7_quad_1000_v8a_ambiguous_removed_bootstrap_xgboost/'
-    data_path = feature_dir + 'updated_tumour_boundary_quadrants_double_are_removed_df.csv'
-
-    tumour_proportion = 0.7
-    tissue_proportion = 0.7
-    max_rank = 1
-
-
-    # ============================================================
-    # Load hyperparameters and select model
-    # ============================================================
-
-    hyperparameters_df = pd.read_csv(
-        os.path.join(
-            code_dir,
-            'quad_1000_v8a_gleason_7_nested_5_folds_v8a_run_runkey.txt'
-        ),
-        sep=' ',
-        header=None
-    )
-
-    hyperparameters_df = hyperparameters_df.rename(
-        columns={
-            0: 'name',
-            1: 'fold',
-            2: 'n_estimator',
-            3: 'max_depth',
-            4: 'learning_rate',
-            5: 'subsample',
-            6: 'colsample_bytree',
-            7: 'gamma',
-            8: 'min_child_weight'
-        }
-    )
-
-    hyperparameters_df = hyperparameters_df[
-        hyperparameters_df.fold == 0
-    ]
-
-    hyperparameters_df = hyperparameters_df.loc[0:288]
-
-    folds_csv_file = (
-        code_dir
-        + 'folds_random_'
-        + str(bootstrap).zfill(3)
-        + '.csv'
-    )
-
-    bootstrap_csv_name = (
-        'xgboost_recurrence_quadrant_1000_total_outer_folds_5_bootstrap_'
-        + str(bootstrap)
-    )
-
-    csv_pattern = os.path.join(
-        model_results_dir,
-        bootstrap_csv_name
-        + '_outer_fold_test_'
-        + str(fold_n).zfill(5)
-        + '_run_*0_7*.csv'
-    )
-
-    score_csv_paths = glob(csv_pattern)
-    score_csv_paths = sorted(score_csv_paths)
-
-    run_id, rfe_model = select_best_xgboost_model(
-        score_csv_paths
-    )
-
-
-    # ============================================================
-    # Build XGBoost model
-    # ============================================================
-
-    xgb_params = {
-        'objective': 'binary:logistic',
-        'eval_metric': 'logloss',
-        'use_label_encoder': False,
-        'n_jobs': -1,
-        'random_state': 8,
-        'n_estimators': hyperparameters_df.loc[run_id].n_estimator,
-        'max_depth': hyperparameters_df.loc[run_id].max_depth,
-        'learning_rate': hyperparameters_df.loc[run_id].learning_rate,
-        'subsample': hyperparameters_df.loc[run_id].subsample,
-        'colsample_bytree': hyperparameters_df.loc[run_id].colsample_bytree,
-        'gamma': hyperparameters_df.loc[run_id].gamma,
-        'min_child_weight': hyperparameters_df.loc[run_id].min_child_weight
-    }
-
-    for param, value in xgb_params.items():
-
-        print(param)
-        print(value)
-
-        if isinstance(value, str):
-
-            try:
-                xgb_params[param] = float(value)
-
-            except ValueError:
-                pass
-
-    xgb_model = XGBClassifier(
-        **xgb_params
-    )
-
-
-    # ============================================================
-    # Load and prepare data
-    # ============================================================
-
-    df = pd.read_csv(
-        data_path,
-        low_memory=False
-    )
-
-    df = df[
-        df['tissue_proportion'] >= tissue_proportion
-    ]
-
-    df = df[
-        df['tumour_proportion'] >= tumour_proportion
-    ]
-
-    df = df[
-        (df['gleason'] == 1)
-        | (df['gleason'] == 2)
-    ]
-
-    df = df.reset_index(drop=True)
-
-    patient_ids = list(
-        df.patient_id.unique()
-    )
-
-    conditions = [
-        (df['gleason'] == 1) & (df['case'] == 1.0),
-        (df['gleason'] == 2) & (df['case'] == 1.0),
-        (df['gleason'] == 1) & (df['case'] == 0.0),
-        (df['gleason'] == 2) & (df['case'] == 0.0)
-    ]
-
-    values = range(0, 4)
-
-    df['clinical_score'] = np.select(
-        conditions,
-        values
-    )
-
-    gleasons = []
-    cases = []
-    total_tiles = []
-    clinical_scores = []
-
-    for patient_id in patient_ids:
-
-        gleasons.append(
-            df[df.patient_id == patient_id].gleason.unique()[0]
-        )
-
-        cases.append(
-            df[df.patient_id == patient_id].case.unique()[0]
-        )
-
-        clinical_scores.append(
-            df[
-                df.patient_id == patient_id
-            ].clinical_score.unique()[0]
-        )
-
-        total_tiles.append(
-            len(
-                df[
-                    df.patient_id == patient_id
-                ].case
-            )
-        )
-
-    patient_df = pd.DataFrame({
-        'patient_id': patient_ids,
-        'gleason': gleasons,
-        'case': cases,
-        'clinical_score': clinical_scores,
-        'total_tiles': total_tiles
-    })
-
-    stratification_df = (
-        patient_df
-        .sort_values(
-            by=['clinical_score', 'total_tiles'],
-            ascending=[True, False]
-        )
-        .copy()
-        .reset_index()
-    )
-
-
-    # ============================================================
-    # Patient-level stratification
-    # ============================================================
-
-    (
-        stratification_df,
-        _,
-        fold_assignments
-    ) = patient_tile_stratifier(
-        stratification_df,
-        df,
-        5,
-        folds_csv_file
-    )
-
-
-    # ============================================================
-    # Train/test split
-    # ============================================================
-
-    df_train = df[
-        fold_assignments != fold_n
-    ]
-
-    df_train = df_train.reset_index(drop=True)
-
-    X_train = df_train.drop(
-        [
-            'patient_id',
-            'slide_id',
-            'area',
-            'decision',
-            'case',
-            'scene',
-            'tile',
-            'quadrant',
-            'clinical_score',
-            'tissue_proportion',
-            'tumour_proportion'
-        ],
-        axis=1
-    ).copy()
-
-    y_train = df_train["case"]
-
-    df_test = df[
-        fold_assignments == fold_n
-    ]
-
-    df_test = df_test.reset_index(drop=True)
-
-    X_test = df_test.drop(
-        [
-            'patient_id',
-            'slide_id',
-            'area',
-            'decision',
-            'case',
-            'scene',
-            'tile',
-            'quadrant',
-            'clinical_score',
-            'tissue_proportion',
-            'tumour_proportion'
-        ],
-        axis=1
-    ).copy()
-
-    y_test = df_test["case"]
-
-    X_train_rfe, X_test_rfe = select_rfe_features(
-        X_train,
-        X_test,
-        rfe_model,
-        max_rank
-    )
-
-
-    # ============================================================
-    # Fit model and predict
-    # ============================================================
-
-    test_probabilities = fit_and_predict(
-        xgb_model,
-        X_train_rfe,
-        y_train,
-        X_test_rfe
-    )
-
-
-    # ============================================================
-    # Save tile-level predictions
-    # ============================================================
-
-    recurrence_probabilities_df = df_test[
-        [
-            'patient_id',
-            'slide_id',
-            'area',
-            'decision',
-            'case',
-            'scene',
-            'tile',
-            'quadrant',
-            'clinical_score',
-            'tissue_proportion',
-            'tumour_proportion'
-        ]
-    ].copy()
-
-    recurrence_probabilities_df.loc[
-        :,
-        'prob_recurrence'
-    ] = test_probabilities
-
-    output_filename = (
-        '/outer_fold_'
-        + str(fold_n).zfill(5)
-        + 'tile_level_recur_probabilities_xgboost.csv'
-    )
-
-    print(outer_fold_output_dir + output_filename)
-
-    recurrence_probabilities_df.to_csv(
-        outer_fold_output_dir + output_filename,
-        index=False
-    )
-
-
-    # ============================================================
-    # Calculate ROC AUC
-    # ============================================================
-
-    test_roc_auc = roc_auc_score(
-        y_test,
-        test_probabilities
-    )
-
-    print('roc_auc:')
-    print(test_roc_auc)
-
-
-    # ============================================================
-    # Calculate and save SHAP values
-    # ============================================================
-
-    print("Fitting SHAP values...")
-
-    shap_output_path = os.path.join(
-        outer_fold_output_dir,
-        f"outer_fold_{str(fold_n).zfill(5)}_shap_output.pkl"
-    )
-
-    calculate_and_save_shap(
-        xgb_model,
-        X_test_rfe,
-        shap_output_path
-    )
-
-
-
-
-```python
-def calculate_and_save_shap(model, X_test, shap_save_path):
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X_test)
-
-    shap_explanation = shap.Explanation(
-        values=shap_values,
-        base_values=explainer.expected_value,
-        data=X_test.values,
-        feature_names=X_test.columns.tolist()
-    )
-
-    with open(shap_save_path, 'wb') as f:
-        pickle.dump(shap_explanation, f)
 
 
 def generate_recurrent_tile_probabilities(bootstrap, fold_n, model_type):
@@ -1659,7 +1657,7 @@ def generate_recurrent_tile_probabilities(bootstrap, fold_n, model_type):
         )
 
         with open(sav_file, 'rb') as f:
-            fold_model = pickle.load(f)
+            rfe_model = pickle.load(f)
 
         rf_classifier_params = {
             'n_estimators': hyperparameters_df.loc[run].n_estimator,
@@ -1953,3 +1951,592 @@ def generate_recurrent_tile_probabilities(bootstrap, fold_n, model_type):
         shap_save_path
     )
 
+
+
+
+
+
+def generate_gleason_tile_probabilities(fold_n, model_type):
+
+    # ============================================================
+    # Paths and setup
+    # ============================================================
+
+    feature_dir = (
+        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
+        'feature_engineering/clinical/prostate/chiip_cohort/slide_20X/'
+        'feature_analysis_v3/'
+    )
+
+    data_path = (
+        feature_dir
+        + 'updated_tumour_boundary_quadrants_double_are_recurrent_df.csv'
+    )
+
+    gleason_annotation_parent_dir = (
+        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
+        'pre_processed_data/clinical/prostate/chiip_cohort/'
+        'overlay_tissue_tumour_gleason_annotations/'
+    )
+
+    tumour_proportion = 0.7
+    tissue_proportion = 0.7
+    max_rank = 1
+
+
+    # ============================================================
+    # Model-specific paths and model selection
+    # ============================================================
+
+    if model_type == 'forest':
+
+        output_dir = (
+            feature_dir
+            + 'gleason_3_vs_4_with_sara/v2/'
+        )
+
+        code_dir = (
+            '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
+            'prostate_recurrence/model_evaluation/'
+            'gleason_3_vs_4_with_sara/v2/'
+        )
+
+        hyperparameters_df = pd.read_csv(
+            os.path.join(
+                code_dir,
+                'quad_1000_gleason_3_vs_4_nested_5_folds_v2_runkey.txt'
+            ),
+            sep=' ',
+            header=None
+        )
+
+        hyperparameters_df.drop(columns=[7], inplace=True)
+
+        hyperparameters_df = hyperparameters_df.rename(
+            columns={
+                0: 'name',
+                1: 'fold',
+                2: 'n_estimator',
+                3: 'max_depth',
+                4: 'min_samples_split',
+                5: 'min_samples_leaf',
+                6: 'max_feature'
+            }
+        )
+
+        hyperparameters_df = hyperparameters_df[
+            hyperparameters_df.fold == 0
+        ]
+
+        hyperparameters_df = hyperparameters_df.loc[0:384]
+
+        csv_pattern = os.path.join(
+            output_dir,
+            'rf_gleason_3_vs_4_quadrant_1000_total_outer_folds_5_'
+            'outer_fold_test_'
+            + str(fold_n).zfill(5)
+            + '_run_*_roc_auc_seed_31_tile_foresttumour_gr_0_7_'
+            'rfe_mean_test_scores.csv'
+        )
+
+        score_csv_paths = sorted(glob(csv_pattern))
+
+        best_score = -np.inf
+        run_id = None
+
+        for score_csv_path in score_csv_paths:
+
+            score_df = pd.read_csv(score_csv_path)
+
+            mean_test_score = score_df['Mean_Test_Scores'].iloc[0]
+
+            if mean_test_score >= best_score:
+                best_score = mean_test_score
+                run_id = int(
+                    re.search(
+                        r'(?<=run_)\d+(?=_roc)',
+                        score_csv_path
+                    ).group()
+                )
+
+        model_filename = (
+            code_dir
+            + 'rf_gleason_3_vs_4_quadrant_1000_total_outer_folds_5_'
+            'outer_fold_test_'
+            + str(fold_n).zfill(5)
+            + '_run_'
+            + str(run_id)
+            + '_roc_auc_seed_31_tile_foresttumour_gr_0_7_'
+            'rfe_mean_test_scores.sav'
+        )
+
+        with open(model_filename, 'rb') as f:
+            rfe_model = pickle.load(f)
+
+        model_params = {
+            'n_estimators': hyperparameters_df.loc[run_id].n_estimator,
+            'max_depth': hyperparameters_df.loc[run_id].max_depth,
+            'min_samples_split': hyperparameters_df.loc[run_id].min_samples_split,
+            'min_samples_leaf': hyperparameters_df.loc[run_id].min_samples_leaf,
+            'max_features': hyperparameters_df.loc[run_id].max_feature,
+            'class_weight': 'balanced',
+            'random_state': 8
+        }
+
+        for param, value in model_params.items():
+
+            if isinstance(value, str):
+
+                try:
+                    model_params[param] = float(value)
+
+                except ValueError:
+                    pass
+
+        model = RandomForestClassifier(**model_params)
+
+
+    elif model_type == 'xgboost':
+
+        output_dir = (
+            feature_dir
+            + 'gleason_3_vs_4_with_sara/xgboost_v2/'
+        )
+
+        code_dir = (
+            '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
+            'prostate_recurrence/model_evaluation/'
+            'gleason_3_vs_4_with_sara/xgboost_v2/'
+        )
+
+        hyperparameters_df = pd.read_csv(
+            os.path.join(
+                code_dir,
+                'xg_quad_1000_gleason_3_vs_4_nested_5_folds_v2_runkey.txt'
+            ),
+            sep=' ',
+            header=None
+        )
+
+        hyperparameters_df.drop(columns=[10], inplace=True)
+
+        hyperparameters_df = hyperparameters_df.rename(
+            columns={
+                0: 'name',
+                1: 'fold',
+                2: 'n_estimator',
+                3: 'max_depth',
+                4: 'learning_rate',
+                5: 'subsample',
+                6: 'colsample_bytree',
+                7: 'gamma',
+                8: 'scale_pos_weight',
+                9: 'min_child_weight'
+            }
+        )
+
+        hyperparameters_df = hyperparameters_df[
+            hyperparameters_df.fold == 0
+        ]
+
+        hyperparameters_df = hyperparameters_df.loc[0:4374]
+
+        valid_runs = set(hyperparameters_df.index)
+
+        csv_pattern = os.path.join(
+            output_dir,
+            'xgboost_gleason_3_vs_4_quadrant_1000_total_outer_folds_5_'
+            'outer_fold_test_'
+            + str(fold_n).zfill(5)
+            + '_run_*_roc_auc_tile_xgboosttumour_gr_0_7_'
+            'rfe_mean_test_scores.csv'
+        )
+
+        score_csv_paths = sorted(glob(csv_pattern))
+
+        run_id, rfe_model = select_best_xgboost_model(
+            score_csv_paths,
+            valid_runs
+        )
+
+        model_params = {
+            'objective': 'binary:logistic',
+            'eval_metric': 'logloss',
+            'use_label_encoder': False,
+            'n_jobs': -1,
+            'random_state': 8,
+            'n_estimators': hyperparameters_df.loc[run_id].n_estimator,
+            'max_depth': hyperparameters_df.loc[run_id].max_depth,
+            'learning_rate': hyperparameters_df.loc[run_id].learning_rate,
+            'subsample': hyperparameters_df.loc[run_id].subsample,
+            'colsample_bytree': hyperparameters_df.loc[run_id].colsample_bytree,
+            'gamma': hyperparameters_df.loc[run_id].gamma,
+            'scale_pos_weight': hyperparameters_df.loc[run_id].scale_pos_weight,
+            'min_child_weight': hyperparameters_df.loc[run_id].min_child_weight
+        }
+
+        for param, value in model_params.items():
+
+            print(param)
+            print(value)
+
+            if isinstance(value, str):
+
+                try:
+                    model_params[param] = float(value)
+
+                except ValueError:
+                    pass
+
+        model = XGBClassifier(**model_params)
+
+
+    else:
+        raise ValueError(
+            "model_type must be either 'forest' or 'xgboost'"
+        )
+
+
+    # ============================================================
+    # Output directory
+    # ============================================================
+
+    outer_fold_output_dir = output_dir + 'outer_fold_output/'
+    os.makedirs(outer_fold_output_dir, exist_ok=True)
+
+
+    # ============================================================
+    # Load and prepare data
+    # ============================================================
+
+    feature_df = pd.read_csv(
+        data_path,
+        low_memory=False
+    )
+
+    feature_df = feature_df.reset_index(drop=True)
+
+    conditions = [
+        (feature_df['gleason'] == 0) & (feature_df['case'] == 1.0),
+        (feature_df['gleason'] == 1) & (feature_df['case'] == 1.0),
+        (feature_df['gleason'] == 2) & (feature_df['case'] == 1.0),
+        (feature_df['gleason'] == 3) & (feature_df['case'] == 1.0),
+        (feature_df['gleason'] == 0) & (feature_df['case'] == 0.0),
+        (feature_df['gleason'] == 1) & (feature_df['case'] == 0.0),
+        (feature_df['gleason'] == 2) & (feature_df['case'] == 0.0),
+        (feature_df['gleason'] == 3) & (feature_df['case'] == 0.0)
+    ]
+
+    values = range(0, 8)
+
+    feature_df['clinical_score'] = np.select(
+        conditions,
+        values
+    )
+
+    gleason_6_8_df = feature_df[
+        (feature_df['tissue_proportion'] > tissue_proportion)
+        & (feature_df['tumour_proportion'] > tumour_proportion)
+        & (
+            (feature_df['gleason'] == 0)
+            | (feature_df['gleason'] == 3)
+        )
+    ].copy()
+
+    gleason_6_8_df['gleason_4'] = (
+        gleason_6_8_df['gleason'] == 3
+    ).astype(int)
+
+    gleason_6_8_df['gleason_3'] = (
+        gleason_6_8_df['gleason'] == 0
+    ).astype(int)
+
+    gleason_7_df = feature_df[
+        (feature_df['tissue_proportion'] > tissue_proportion)
+        & (feature_df['tumour_proportion'] > tumour_proportion)
+        & (
+            (feature_df['gleason'] == 1)
+            | (feature_df['gleason'] == 2)
+        )
+    ].copy()
+
+
+    # ============================================================
+    # Load Gleason annotation data
+    # ============================================================
+
+    csv_files = [
+        os.path.join(gleason_annotation_parent_dir, f)
+        for f in os.listdir(gleason_annotation_parent_dir)
+        if f.endswith('_1000.csv')
+    ]
+
+    all_dfs = []
+
+    for file_path in csv_files:
+
+        print(f"Loading: {file_path}")
+
+        df = pd.read_csv(file_path)
+        all_dfs.append(df)
+
+    combined_df = pd.concat(
+        all_dfs,
+        ignore_index=True
+    )
+
+    combined_df.rename(
+        columns={
+            'tumour_gleason4_fraction_of_tissue_area': 'gleason_4_proportion',
+            'tumour_gleason3_fraction_of_tissue_area': 'gleason_3_proportion'
+        },
+        inplace=True
+    )
+
+    gleason_scoring_df = combined_df[
+        (combined_df['tissue_fraction_of_tile_area'] > tissue_proportion)
+        & (
+            (combined_df['gleason_4_proportion'] > tumour_proportion)
+            | (combined_df['gleason_3_proportion'] > tumour_proportion)
+        )
+    ].copy()
+
+    merged_7_df = gleason_7_df.merge(
+        gleason_scoring_df,
+        on=['slide_id', 'scene', 'tile', 'quadrant'],
+        suffixes=('_df7', '_df_scoring'),
+        how='inner'
+    )
+
+    merged_7_df.drop(
+        columns=[
+            'tumour_total_fraction_of_tissue_area',
+            'tumour_other_fraction_of_tissue_area',
+            'tissue_fraction_of_tile_area',
+            'row',
+            'col',
+            'quadrant_row',
+            'quadrant_col'
+        ],
+        inplace=True
+    )
+
+    merged_7_df['gleason_4'] = np.round(
+        merged_7_df['gleason_4_proportion']
+    )
+
+    merged_7_df['gleason_3'] = np.round(
+        merged_7_df['gleason_3_proportion']
+    )
+
+    merged_7_df.drop(
+        columns=[
+            'gleason_4_proportion',
+            'gleason_3_proportion'
+        ],
+        inplace=True
+    )
+
+    gleason_df = pd.concat(
+        [merged_7_df, gleason_6_8_df],
+        ignore_index=True
+    )
+
+    gleason_df.drop(
+        columns=['area', 'decision', 'gleason_3'],
+        inplace=True
+    )
+
+
+    # ============================================================
+    # Patient-level stratification
+    # ============================================================
+
+    unique_patients = gleason_df['patient_id'].unique()
+
+    patient_records = []
+
+    for unique_patient in unique_patients:
+
+        single_patient_df = gleason_df[
+            gleason_df['patient_id'] == unique_patient
+        ]
+
+        total_tiles = len(single_patient_df)
+
+        clinical_score = single_patient_df[
+            'clinical_score'
+        ].unique()[0]
+
+        total_gleason_4 = np.sum(
+            single_patient_df['gleason_4']
+        )
+
+        total_gleason_3 = total_tiles - total_gleason_4
+
+        patient_records.append({
+            "patient_id": unique_patient,
+            "total_tiles": total_tiles,
+            "total_gleason_4": total_gleason_4,
+            "total_gleason_3": total_gleason_3,
+            "proportion_3": total_gleason_3 / total_tiles,
+            "clinical_score": clinical_score
+        })
+
+    patient_df = pd.DataFrame(patient_records)
+
+    stratification_df = (
+        patient_df
+        .copy()
+        .sort_values(
+            by=['clinical_score', 'total_gleason_3', 'total_tiles'],
+            ascending=[True, False, False]
+        )
+        .reset_index()
+    )
+
+    folds_csv_file = code_dir + 'outer_folds_data.csv'
+
+    (
+        stratification_df,
+        _,
+        fold_assignments
+    ) = patient_tile_stratifier(
+        stratification_df,
+        gleason_df,
+        5,
+        folds_csv_file
+    )
+
+
+    # ============================================================
+    # Train/test split
+    # ============================================================
+
+    df = gleason_df.copy()
+
+    df_train = df[
+        fold_assignments != fold_n
+    ]
+
+    df_train = df_train.reset_index(drop=True)
+
+    X_train = df_train.drop(
+        [
+            'patient_id',
+            'slide_id',
+            'gleason',
+            'case',
+            'scene',
+            'tile',
+            'quadrant',
+            'tissue_proportion',
+            'tumour_proportion',
+            'clinical_score',
+            'gleason_4'
+        ],
+        axis=1
+    ).copy()
+
+    y_train = df_train['gleason_4']
+
+    df_test = df[
+        fold_assignments == fold_n
+    ]
+
+    df_test = df_test.reset_index(drop=True)
+
+    X_test = df_test.drop(
+        [
+            'patient_id',
+            'slide_id',
+            'gleason',
+            'case',
+            'scene',
+            'tile',
+            'quadrant',
+            'tissue_proportion',
+            'tumour_proportion',
+            'clinical_score',
+            'gleason_4'
+        ],
+        axis=1
+    ).copy()
+
+    y_test = df_test['gleason_4']
+
+    X_train_rfe, X_test_rfe = select_rfe_features(
+        X_train,
+        X_test,
+        rfe_model,
+        max_rank
+    )
+
+
+    # ============================================================
+    # Fit model and predict
+    # ============================================================
+
+    test_probabilities = fit_and_predict(
+        model,
+        X_train_rfe,
+        y_train,
+        X_test_rfe
+    )
+
+
+    # ============================================================
+    # Save tile-level predictions
+    # ============================================================
+
+    gleason_probabilities_df = df_test[
+        [
+            'patient_id',
+            'slide_id',
+            'case',
+            'scene',
+            'tile',
+            'quadrant',
+            'clinical_score',
+            'gleason',
+            'gleason_4',
+            'tissue_proportion',
+            'tumour_proportion'
+        ]
+    ].copy()
+
+    gleason_probabilities_df.loc[
+        :,
+        'gleason_4_probability'
+    ] = test_probabilities
+
+    output_filename = (
+        '/outer_fold_'
+        + str(fold_n).zfill(5)
+        + 'tile_level_gleason_probabilities.csv'
+    )
+
+    print(outer_fold_output_dir + output_filename)
+
+    gleason_probabilities_df.to_csv(
+        outer_fold_output_dir + output_filename,
+        index=False
+    )
+
+
+    # ============================================================
+    # Calculate and save SHAP values
+    # ============================================================
+
+    print("Fitting SHAP values...")
+
+    shap_output_path = os.path.join(
+        outer_fold_output_dir,
+        f"outer_fold_{str(fold_n).zfill(5)}_shap_output.pkl"
+    )
+
+    calculate_and_save_shap(
+        model,
+        X_test_rfe,
+        shap_output_path
+    )
