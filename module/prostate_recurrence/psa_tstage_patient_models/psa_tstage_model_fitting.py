@@ -1146,6 +1146,548 @@ def performance_results_df_generator(
     return performance_results_df
 
 
+def generate_inner_probabilities_for_optimum_psa_inner_model(
+    bootstrap,
+    fold_n,
+    subfile_name,
+    f1_score_thresholds
+):
+
+    # ========================================================
+    # LOGISTIC REGRESSION RUN KEY
+    # ========================================================
+
+    run_name_prefix = (
+        'gleason_7_quad_1000_v8a_patient_level_logistic_removed_xgboost_'
+        f'psa_tstage_only_outer_fold_{bootstrap}'
+    )
+
+    python_code_dir = (
+        '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
+        'prostate_recurrence/model_evaluation/recurrence_status_tile/'
+        'rfe_runs/'
+        f'{run_name_prefix}/{run_name_prefix}_fold_runkey.txt'
+    )
+
+    df_logistic = pd.read_table(
+        python_code_dir,
+        delimiter=" ",
+        header=None
+    )
+
+    df_logistic = df_logistic.rename(
+        columns={
+            0: "run_name",
+            1: "fold",
+            2: "penalty",
+            3: "C",
+            4: "solver",
+            5: "l1_ratio"
+        }
+    )
+
+    df_logistic = df_logistic.replace({
+        np.nan: None
+    })
+
+    print(
+        df_logistic.head()
+    )
+
+    # ========================================================
+    # PATHS
+    # ========================================================
+
+    patient_output_dir = (
+        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
+        'feature_engineering/clinical/prostate/chiip_cohort/slide_20X/'
+        'feature_analysis_v3/rfe_runs/'
+        f'{run_name_prefix}/'
+    )
+
+    input_dir = (
+        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
+        'feature_engineering/clinical/prostate/chiip_cohort/slide_20X/'
+        'feature_analysis_v3/'
+    )
+
+    main_path = (
+        '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
+        'prostate_recurrence/model_evaluation/recurrence_status_tile/'
+        'rfe_runs/'
+        'gleason_7_quad_1000_v8a_ambiguous_removed_bootstrap_xgboost/'
+    )
+
+    code_dir = (
+        '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
+        'prostate_recurrence/model_evaluation/recurrence_status_tile/'
+        'rfe_runs/'
+        'gleason_7_quad_1000_v8a_ambiguous_removed_bootstrap_xgboost/'
+    )
+
+    data_dir = os.path.join(
+        input_dir,
+        'updated_tumour_boundary_quadrants_double_are_removed_df.csv'
+    )
+
+    psa_dir = (
+        '/nemo/project/proj-sahai-tme-ml/working/raw_data/clinical/'
+        'prostate/chiip_cohort/TPSAdata/'
+    )
+
+    folds_csv_file = os.path.join(
+        code_dir,
+        f'folds_random_{bootstrap:03d}.csv'
+    )
+
+    # ========================================================
+    # PSA DATA
+    # ========================================================
+
+    df_psa = pd.read_csv(
+        os.path.join(
+            psa_dir,
+            'baseline_fullchhipcohort_PSATstage.csv'
+        ),
+        low_memory=False
+    )
+
+    df_psa["patient_id"] = (
+        df_psa["trialno"]
+        .astype(str)
+        .str.zfill(6)
+        .radd("C")
+    )
+
+    df_psa = df_psa.drop(
+        [
+            "case",
+            "trialno",
+            "prehrmpsa",
+            "clint_clean",
+            "prehcat2",
+            "prehcat1"
+        ],
+        axis=1
+    )
+
+    # ========================================================
+    # TILE DATA
+    # ========================================================
+
+    df = pd.read_csv(
+        data_dir,
+        low_memory=False
+    )
+
+    df = df[
+        (df['tissue_proportion'] >= 0.7) &
+        (df['tumour_proportion'] >= 0.7) &
+        (df['gleason'].isin([1, 2]))
+    ].reset_index(
+        drop=True
+    )
+
+    # ========================================================
+    # PATIENT-LEVEL STRATIFICATION
+    # ========================================================
+
+    patient_ids = list(
+        df.patient_id.unique()
+    )
+
+    conditions = [
+        (df['gleason'] == 1) & (df['case'] == 1.0),
+        (df['gleason'] == 2) & (df['case'] == 1.0),
+        (df['gleason'] == 1) & (df['case'] == 0.0),
+        (df['gleason'] == 2) & (df['case'] == 0.0)
+    ]
+
+    df['clinical_score'] = np.select(
+        conditions,
+        range(4)
+    )
+
+    gleasons = []
+    cases = []
+    total_tiles = []
+    clinical_scores = []
+
+    for patient_id in patient_ids:
+
+        patient_df = df[
+            df.patient_id == patient_id
+        ]
+
+        gleasons.append(
+            patient_df.gleason.unique()[0]
+        )
+
+        cases.append(
+            patient_df.case.unique()[0]
+        )
+
+        clinical_scores.append(
+            patient_df.clinical_score.unique()[0]
+        )
+
+        total_tiles.append(
+            len(patient_df)
+        )
+
+    df_patient = pd.DataFrame({
+        'patient_id': patient_ids,
+        'gleason': gleasons,
+        'case': cases,
+        'clinical_score': clinical_scores,
+        'total_tiles': total_tiles
+    })
+
+    df_strat = (
+        df_patient
+        .sort_values(
+            by=[
+                'clinical_score',
+                'total_tiles'
+            ],
+            ascending=[
+                True,
+                False
+            ]
+        )
+        .copy()
+        .reset_index()
+    )
+
+    _, _, predefined_splits_array = (
+        tmf.patient_tile_stratifier(
+            df_strat,
+            df,
+            5,
+            folds_csv_file
+        )
+    )
+
+    # ========================================================
+    # OUTER TRAINING DATA
+    # ========================================================
+
+    df = df[
+        predefined_splits_array != fold_n
+    ].reset_index(
+        drop=True
+    )
+
+    patient_ids = list(
+        df.patient_id.unique()
+    )
+
+    # ========================================================
+    # MODEL FEATURES
+    # ========================================================
+
+    clinical_model_features = [
+        'psa',
+        't2',
+        't3'
+    ]
+
+    # ========================================================
+    # INNER FOLDS
+    # ========================================================
+
+    inner_folds = np.arange(5)
+
+    inner_folds_file = os.path.join(
+        main_path,
+        f'inner_folds_{fold_n}_data.csv'
+    )
+
+    # ========================================================
+    # PSA / ECM THRESHOLD ANALYSES
+    # ========================================================
+
+    threshold_analyses = [
+        'psa_zero_threshold',
+        'psa_ecm_threshold'
+    ]
+
+    for output_suffix in threshold_analyses:
+
+        # ====================================================
+        # LOAD SELECTED INNER-FOLD MODEL
+        # ====================================================
+
+        input_file = (
+            f'outer_fold_{fold_n:05d}_'
+            'graded_f1_score_inner_fold_'
+            f'{subfile_name}_performance_{output_suffix}.csv'
+        )
+
+        input_path = os.path.join(
+            patient_output_dir,
+            input_file
+        )
+
+        df_in = pd.read_csv(
+            input_path
+        )
+
+        row = df_in.iloc[0]
+
+        run = row['run']
+        run_name = row['run_name']
+        combination = row['combination']
+        threshold = row['threshold']
+        threshold_probability = row['threshold_probability']
+
+        df_logistic_row = df_logistic[
+            df_logistic['run_name'] == run_name
+        ].copy()
+
+        logistic_model = get_logistic_model(
+            df_logistic_row
+        )
+
+        # ====================================================
+        # INNER-FOLD MODELS
+        # ====================================================
+
+        for inner_fold in inner_folds:
+
+            print(inner_fold)
+
+            # ================================================
+            # INNER-FOLD PATIENT STRATIFICATION
+            # ================================================
+
+            gleasons = []
+            cases = []
+            total_tiles = []
+            clinical_scores = []
+
+            for patient_id in patient_ids:
+
+                patient_df = df[
+                    df.patient_id == patient_id
+                ]
+
+                gleasons.append(
+                    patient_df.gleason.unique()[0]
+                )
+
+                cases.append(
+                    patient_df.case.unique()[0]
+                )
+
+                clinical_scores.append(
+                    patient_df.clinical_score.unique()[0]
+                )
+
+                total_tiles.append(
+                    len(patient_df)
+                )
+
+            df_patient = pd.DataFrame({
+                'patient_id': patient_ids,
+                'gleason': gleasons,
+                'case': cases,
+                'clinical_score': clinical_scores,
+                'total_tiles': total_tiles
+            })
+
+            df_strat = (
+                df_patient
+                .sort_values(
+                    by=[
+                        'clinical_score',
+                        'total_tiles'
+                    ],
+                    ascending=[
+                        True,
+                        False
+                    ]
+                )
+                .copy()
+                .reset_index()
+            )
+
+            _, _, predefined_splits_array = (
+                tmf.patient_tile_stratifier(
+                    df_strat,
+                    df,
+                    5,
+                    inner_folds_file
+                )
+            )
+
+            # ================================================
+            # INNER TRAIN / TEST DATA
+            # ================================================
+
+            df_train = df[
+                predefined_splits_array != inner_fold
+            ].reset_index(
+                drop=True
+            )
+
+            df_test = df[
+                predefined_splits_array == inner_fold
+            ].reset_index(
+                drop=True
+            )
+
+            # ================================================
+            # PATIENT-LEVEL PSA / T-STAGE DATA
+            # ================================================
+
+            test_unique_patients = [
+                patient_id
+                for patient_id in df_test.patient_id.unique()
+                if patient_id != "" # Removed for GitHub
+            ]
+
+            train_unique_patients = [
+                patient_id
+                for patient_id in df_train.patient_id.unique()
+                if patient_id != ""
+            ]
+
+            df_test_proba = calculate_patient_psa(
+                df_test,
+                test_unique_patients,
+                df_psa
+            )
+
+            df_train_proba = calculate_patient_psa(
+                df_train,
+                train_unique_patients,
+                df_psa
+            )
+
+            # ================================================
+            # STANDARDISE PSA USING TRAINING DATA ONLY
+            # ================================================
+
+            psa_columns = ['psa']
+
+            psa_means = df_train_proba[
+                psa_columns
+            ].mean()
+
+            psa_stds = df_train_proba[
+                psa_columns
+            ].std()
+
+            df_train_proba[
+                psa_columns
+            ] = (
+                df_train_proba[psa_columns] - psa_means
+            ) / psa_stds
+
+            df_test_proba[
+                psa_columns
+            ] = (
+                df_test_proba[psa_columns] - psa_means
+            ) / psa_stds
+
+            # ================================================
+            # TEST PATIENTS ABOVE TILE-COUNT THRESHOLD
+            # ================================================
+
+            df_test_thresholded = df_test_proba[
+                df_test_proba.n_tiles >= threshold
+            ].copy()
+
+            X_train = df_train_proba[
+                clinical_model_features
+            ]
+
+            y_train = df_train_proba[
+                'case'
+            ]
+
+            X_test = df_test_thresholded[
+                clinical_model_features
+            ]
+
+            # ================================================
+            # FIT MODEL AND PREDICT
+            # ================================================
+
+            logistic_model.fit(
+                X_train,
+                y_train
+            )
+
+            y_pred_probability = logistic_model.predict_proba(
+                X_test
+            )[:, 1]
+
+            # ================================================
+            # ADD PREDICTIONS / METADATA
+            # ================================================
+
+            df_test_thresholded[
+                'recurrence_probability'
+            ] = y_pred_probability
+
+            df_test_thresholded['fold'] = fold_n
+            df_test_thresholded['bootstrap'] = bootstrap
+            df_test_thresholded['run'] = run
+            df_test_thresholded['run_name'] = run_name
+            df_test_thresholded['combination'] = combination
+            df_test_thresholded['threshold'] = threshold
+            df_test_thresholded[
+                'threshold_probability'
+            ] = threshold_probability
+
+            # Convert PSA back to original units
+            df_test_thresholded[
+                psa_columns
+            ] = (
+                df_test_thresholded[psa_columns] * psa_stds
+            ) + psa_means
+
+            # ================================================
+            # SAVE PATIENT-LEVEL PREDICTIONS
+            # ================================================
+
+            selected_model_save_name = (
+                f'outer_fold_{fold_n:05d}'
+                f'inner_fold_{inner_fold:05d}_'
+                f'{subfile_name}_'
+                f'bootstrap_{bootstrap:03d}_'
+                f'selected_model_from_inner_'
+                f'psa_patient_probabilities_{output_suffix.replace("psa_", "")}.csv'
+            )
+
+            selected_model_path = os.path.join(
+                patient_output_dir,
+                selected_model_save_name
+            )
+
+            print(
+                selected_model_path
+            )
+
+            try:
+
+                df_test_thresholded.to_csv(
+                    selected_model_path,
+                    index=False
+                )
+
+                print(
+                    "Successfully saved CSV"
+                )
+
+            except Exception as e:
+
+                print(
+                    f"Error saving CSV: {e}"
+                )
+
 
 def generate_inner_outer_scores_for_graded_f1_score_psa_only(
     bootstrap,
