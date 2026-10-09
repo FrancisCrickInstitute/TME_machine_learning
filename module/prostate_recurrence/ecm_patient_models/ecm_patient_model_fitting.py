@@ -29,15 +29,24 @@ if module_path not in sys.path:
 
 import tile_model_fitting as tmf
 
+#duplicate with psa or analagous
 
+#duplicate
+def load_csv_data(csv_path):
 
+    return pd.read_csv(
+        csv_path,
+        low_memory=False
+    )
 
-
+#for generate_f1_score_csv
+#duplicate with psa
 def performance_results_df_generator(
     csv_paths,
     df_logistic,
     tile_count_thresholds,
-    output_dir
+    output_dir,
+    data_type
 ):
 
     probability_thresholds = np.linspace(
@@ -98,7 +107,7 @@ def performance_results_df_generator(
             output_dir,
             f'fold_{fold_string}',
             f'run_{run_string}',
-            f'outer_fold_{fold_string}_run_{run_string}_inner_cv_metrics_patient_level.csv'
+            f'outer_fold_{fold_string}_run_{run_string}_inner_cv_metrics_patient_level_{data_type}.csv'
         )
 
 
@@ -262,134 +271,8 @@ def performance_results_df_generator(
 
     return performance_results_df
 
-
-
-def select_best_tile_threshold(
-    performance_results_df,
-    f1_score_thresholds
-):
-    """Select the best tile-count threshold.
-
-    For each feature combination, selects the tile-count threshold
-    using the specified nonrecurrent F1-score criterion, recurrent
-    F1-score, ROC-AUC, and median tile-count threshold tie-breakers.
-    """
-
-    selected_rows = []
-
-    combinations = (
-        performance_results_df['combination']
-        .unique()
-    )
-
-    for combination in combinations:
-
-        df_combination = performance_results_df[
-            performance_results_df['combination'] == combination
-        ].copy()
-
-        # ========================================================
-        # PERFORMANCE MAXIMISATION
-        # ========================================================
-
-        df_threshold = df_combination.copy()
-
-        df_threshold = df_threshold[df_threshold['mean_f1_score_recur'] >= df_threshold['mean_f1_score_nonrecur']]
-
-        for f1_score_lower in f1_score_thresholds:
-
-            df_lower = df_threshold[
-                df_threshold['mean_f1_score_nonrecur']
-                >= f1_score_lower
-            ].copy()
-
-            if len(df_lower) == 0:
-                continue
-
-            # ====================================================
-            # MAXIMISE RECURRENCE F1 SCORE
-            # ====================================================
-
-            max_f1_score_recur = np.max(
-                df_lower['mean_f1_score_recur']
-            )
-
-            df_lower = df_lower[
-                df_lower['mean_f1_score_recur']
-                == max_f1_score_recur
-            ].copy()
-
-            # ====================================================
-            # BREAK TIES USING ROC-AUC
-            # ====================================================
-
-            max_roc_auc = np.max(
-                df_lower['mean_roc_auc']
-            )
-
-            df_lower = df_lower[
-                df_lower['mean_roc_auc']
-                == max_roc_auc
-            ].copy()
-
-            # ====================================================
-            # BREAK REMAINING TIES USING MEDIAN
-            # TILE-COUNT THRESHOLD
-            # ====================================================
-
-            median_tile_count_threshold = (
-                df_lower['tile_count_threshold']
-                .median()
-            )
-
-            df_lower['distance_to_median'] = (
-                df_lower['tile_count_threshold']
-                - median_tile_count_threshold
-            ).abs()
-
-            df_lower = (
-                df_lower
-                .sort_values(
-                    'distance_to_median'
-                )
-                .reset_index(
-                    drop=True
-                )
-            )
-
-            selected_rows.append(
-                df_lower.iloc[0].copy()
-            )
-
-            break
-
-    f1_score_df = pd.DataFrame(
-        selected_rows
-    )
-
-    if len(f1_score_df) > 0:
-        f1_score_df = f1_score_df.drop(
-            columns=['distance_to_median']
-        )
-
-    return f1_score_df
-
-
-#Also appears in PSA analysis
-def create_logistic_model(df_row): # was get_logistic_model
-    """Create a logistic regression model from run parameters."""
-    return LogisticRegression(
-        penalty=df_row['penalty'].iloc[0],
-        C=df_row['C'].iloc[0],
-        solver=df_row['solver'].iloc[0],
-        l1_ratio=df_row['l1_ratio'].iloc[0],
-        max_iter=1000,
-        random_state=8,
-    )
-
-
-
-#Also appears in PSA code. Update and match variable names in both and store in one place.
+#Appears in run_ecm_patient_level_nested_cv
+#Duplicate in PSA code. Update and match variable names in both and store in one place.
 def evaluate_logistic_model(# was called run_logistic_for_graded_f1_score
     performance_results_df,
     df_logistic,
@@ -605,52 +488,22 @@ def evaluate_logistic_model(# was called run_logistic_for_graded_f1_score
         results
     )
 
+#appears in  evaluate_logistic_model and generate_optimal_inner_model_predictions
+#Duplicate. Also appears in PSA analysis
+def create_logistic_model(df_row): # was get_logistic_model
+    """Create a logistic regression model from run parameters."""
+    return LogisticRegression(
+        penalty=df_row['penalty'].iloc[0],
+        C=df_row['C'].iloc[0],
+        solver=df_row['solver'].iloc[0],
+        l1_ratio=df_row['l1_ratio'].iloc[0],
+        max_iter=1000,
+        random_state=8,
+    )
 
 
-
-
-def aggregate_tile_probabilities_to_patients(# was calculate_patient_probabilities
-    pred_proba,
-    df,
-    unique_patients
-):
-    """Aggregate tile-level prediction probabilities to patient level.
-
-    Calculates the number of tiles and mean, standard deviation, and
-    maximum prediction probability for each patient.
-    """
-
-    if isinstance(unique_patients, str):
-        unique_patients = [unique_patients]
-
-    patient_results = []
-
-    for patient_id in unique_patients:
-
-        patient_df = df[
-            df['patient_id'] == patient_id
-        ]
-
-        patient_proba = pred_proba[
-            df['patient_id'] == patient_id
-        ]
-
-        patient_results.append({
-            'patient_id': patient_id,
-            'gleason': patient_df['gleason'].unique()[0],
-            'case': patient_df['case'].unique()[0],
-            'n_tiles': len(patient_proba),
-            'mean_prob': np.mean(patient_proba),
-            'std_prob': np.std(patient_proba, ddof=1),
-            'max_prob': np.max(patient_proba)
-        })
-
-    df_proba = pd.DataFrame(patient_results)
-
-    df_proba['std_prob'] = df_proba['std_prob'].fillna(0)
-
-    return df_proba
-
+#analagous almost identical PSA function
+#appears in run_ecm_patient_level_nested_cv
 def select_best_probability_threshold(
     performance_results_df,
     f1_score_thresholds
@@ -770,6 +623,183 @@ def select_best_probability_threshold(
         )
 
     return f1_score_df
+
+
+
+#ECM specific functions
+
+# for run_ecm_patient_level_nested_cv
+def select_best_tile_threshold(
+    performance_results_df,
+    f1_score_thresholds
+):
+    """Select the best tile-count threshold.
+
+    For each feature combination, selects the tile-count threshold
+    using the specified nonrecurrent F1-score criterion, recurrent
+    F1-score, ROC-AUC, and median tile-count threshold tie-breakers.
+    """
+
+    selected_rows = []
+
+    combinations = (
+        performance_results_df['combination']
+        .unique()
+    )
+
+    for combination in combinations:
+
+        df_combination = performance_results_df[
+            performance_results_df['combination'] == combination
+        ].copy()
+
+        # ========================================================
+        # PERFORMANCE MAXIMISATION
+        # ========================================================
+
+        df_threshold = df_combination.copy()
+
+        df_threshold = df_threshold[df_threshold['mean_f1_score_recur'] >= df_threshold['mean_f1_score_nonrecur']]
+
+        for f1_score_lower in f1_score_thresholds:
+
+            df_lower = df_threshold[
+                df_threshold['mean_f1_score_nonrecur']
+                >= f1_score_lower
+            ].copy()
+
+            if len(df_lower) == 0:
+                continue
+
+            # ====================================================
+            # MAXIMISE RECURRENCE F1 SCORE
+            # ====================================================
+
+            max_f1_score_recur = np.max(
+                df_lower['mean_f1_score_recur']
+            )
+
+            df_lower = df_lower[
+                df_lower['mean_f1_score_recur']
+                == max_f1_score_recur
+            ].copy()
+
+            # ====================================================
+            # BREAK TIES USING ROC-AUC
+            # ====================================================
+
+            max_roc_auc = np.max(
+                df_lower['mean_roc_auc']
+            )
+
+            df_lower = df_lower[
+                df_lower['mean_roc_auc']
+                == max_roc_auc
+            ].copy()
+
+            # ====================================================
+            # BREAK REMAINING TIES USING MEDIAN
+            # TILE-COUNT THRESHOLD
+            # ====================================================
+
+            median_tile_count_threshold = (
+                df_lower['tile_count_threshold']
+                .median()
+            )
+
+            df_lower['distance_to_median'] = (
+                df_lower['tile_count_threshold']
+                - median_tile_count_threshold
+            ).abs()
+
+            df_lower = (
+                df_lower
+                .sort_values(
+                    'distance_to_median'
+                )
+                .reset_index(
+                    drop=True
+                )
+            )
+
+            selected_rows.append(
+                df_lower.iloc[0].copy()
+            )
+
+            break
+
+    f1_score_df = pd.DataFrame(
+        selected_rows
+    )
+
+    if len(f1_score_df) > 0:
+        f1_score_df = f1_score_df.drop(
+            columns=['distance_to_median']
+        )
+
+    return f1_score_df
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+#appears in run_ecm_patient_level_nested_cv and generate_optimal_inner_model_predictions
+def aggregate_tile_probabilities_to_patients(# was calculate_patient_probabilities
+    pred_proba,
+    df,
+    unique_patients
+):
+    """Aggregate tile-level prediction probabilities to patient level.
+
+    Calculates the number of tiles and mean, standard deviation, and
+    maximum prediction probability for each patient.
+    """
+
+    if isinstance(unique_patients, str):
+        unique_patients = [unique_patients]
+
+    patient_results = []
+
+    for patient_id in unique_patients:
+
+        patient_df = df[
+            df['patient_id'] == patient_id
+        ]
+
+        patient_proba = pred_proba[
+            df['patient_id'] == patient_id
+        ]
+
+        patient_results.append({
+            'patient_id': patient_id,
+            'gleason': patient_df['gleason'].unique()[0],
+            'case': patient_df['case'].unique()[0],
+            'n_tiles': len(patient_proba),
+            'mean_prob': np.mean(patient_proba),
+            'std_prob': np.std(patient_proba, ddof=1),
+            'max_prob': np.max(patient_proba)
+        })
+
+    df_proba = pd.DataFrame(patient_results)
+
+    df_proba['std_prob'] = df_proba['std_prob'].fillna(0)
+
+    return df_proba
+
 
 
 
@@ -1742,11 +1772,11 @@ run_prefix = (
 )
 
 output_files = {{
-    'metrics_patient_level':
+    'metrics_patient_level_ecm':
         metrics_df,
-    'f1_probability_threshold_patient_level':
+    'f1_probability_threshold_patient_level_ecm':
         f1_thresholds_df,
-    'probability_predictions_patient_level':
+    'probability_predictions_patient_level_ecm':
         predictions_df,
 }}
 
@@ -1763,8 +1793,12 @@ for suffix, output_df in output_files.items():
     )
 """)
 
-
-def generate_f1_score_csv(bootstrap):
+#duplicate with psa
+def generate_f1_score_csv(
+    code_dir,
+    run_name,
+    base_dir,
+    data_type):
     """Combine patient-level F1 results across all folds and runs.
 
     Collects the probability-threshold performance CSVs generated by the
@@ -1780,32 +1814,17 @@ def generate_f1_score_csv(bootstrap):
         0, 2, 5, 10, 15, 20, 25, 30, 35
     ]
 
-    run_name = (
-        'gleason_7_quad_1000_v8a_patient_level_logistic_plus_'
-        'tile_threshold_f1score_removed_xgboost_outer_fold_'
-        f'{bootstrap}'
-    )
 
     # ========================================================
     # PATHS
     # ========================================================
 
-    base_dir = (
-        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
-        'feature_engineering/clinical/prostate/chiip_cohort/'
-        'slide_20X/feature_analysis_v3/rfe_runs/'
-    )
 
     output_dir = os.path.join(
         base_dir,
         run_name
     )
 
-    code_dir = (
-        '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
-        'prostate_recurrence/model_evaluation/'
-        'recurrence_status_tile/rfe_runs/'
-    )
 
     logistic_runkey = os.path.join(
         code_dir,
@@ -1846,11 +1865,9 @@ def generate_f1_score_csv(bootstrap):
         output_dir,
         'fold_*',
         'run_*',
-        'outer_fold_*run_*_inner_cv_'
-        'f1_probability_threshold_patient_level.csv'
+        'outer_fold_*_run_*_inner_cv_'
+        f'f1_probability_threshold_patient_level_{data_type}.csv'
     )
-
-
 
     csv_paths = sorted(
         glob(csv_pattern)
@@ -1875,7 +1892,8 @@ def generate_f1_score_csv(bootstrap):
             csv_paths,
             df_logistic,
             tile_count_thresholds,
-            output_dir
+            output_dir,
+            data_type
         )
     )
 
@@ -1886,7 +1904,7 @@ def generate_f1_score_csv(bootstrap):
     output_file = os.path.join(
         output_dir,
         'mean_inner_f1_score_plus_roc_auc_'
-        'all_probability_thresholds.csv'
+        f'all_probability_thresholds_{data_type}.csv'
     )
 
     performance_results_df.to_csv(
@@ -1902,24 +1920,11 @@ def generate_f1_score_csv(bootstrap):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def run_ecm_patient_level_nested_cv(
+    run_name_prefix,
     bootstrap,
+    base_code_dir,
+    base_data_dir,
     fold_n,
     subfile_name,
     f1_score_thresholds
@@ -1947,11 +1952,7 @@ def run_ecm_patient_level_nested_cv(
     # RUN NAME
     # ========================================================
 
-    run_name = (
-        'gleason_7_quad_1000_v8a_patient_level_logistic_plus_'
-        'tile_threshold_f1score_removed_xgboost_outer_fold_'
-        f'{bootstrap}'
-    )
+    run_name = f'{run_name_prefix}{bootstrap}'
 
     # ========================================================
     # LOGISTIC REGRESSION RUN KEY
@@ -1962,15 +1963,14 @@ def run_ecm_patient_level_nested_cv(
     #
     # These parameters are predetermined from the model-selection
     # pipeline and are not fitted using the outer-test patients.
-    python_code_dir = (
-        '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
-        'prostate_recurrence/model_evaluation/recurrence_status_tile/'
-        'rfe_runs/'
-        f'{run_name}/{run_name}_fold_runkey.txt'
+    logistic_run_key = os.path.join(
+        base_code_dir,
+        run_name,
+        f'{run_name}_fold_runkey.txt'
     )
 
     df_logistic = pd.read_table(
-        python_code_dir,
+        logistic_run_key,
         delimiter=" ",
         header=None
     )
@@ -1992,35 +1992,26 @@ def run_ecm_patient_level_nested_cv(
     # PATHS
     # ========================================================
 
-    output_dir = (
-        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
-        'feature_engineering/clinical/prostate/chiip_cohort/slide_20X/'
-        'feature_analysis_v3/rfe_runs/'
-        'gleason_7_quad_1000_v8a_ambiguous_removed_bootstrap_xgboost/'
+    output_dir = os.path.join(
+        base_data_dir,
+        'rfe_runs',
+        'gleason_7_quad_1000_v8a_ambiguous_removed_bootstrap_xgboost'
     )
 
-    patient_output_dir = (
-        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
-        'feature_engineering/clinical/prostate/chiip_cohort/slide_20X/'
-        'feature_analysis_v3/rfe_runs/'
-        f'{run_name}/'
+    patient_output_dir = os.path.join(
+        base_data_dir,
+        'rfe_runs',
+        run_name
     )
 
-    input_dir = (
-        '/nemo/project/proj-sahai-tme-ml/working/processed_data/'
-        'feature_engineering/clinical/prostate/chiip_cohort/slide_20X/'
-        'feature_analysis_v3/'
+    code_dir = os.path.join(
+        base_code_dir,
+        'gleason_7_quad_1000_v8a_ambiguous_removed_bootstrap_xgboost'
     )
 
-    code_dir = (
-        '/nemo/project/proj-sahai-tme-ml/working/codebase/local/module/'
-        'prostate_recurrence/model_evaluation/recurrence_status_tile/'
-        'rfe_runs/'
-        'gleason_7_quad_1000_v8a_ambiguous_removed_bootstrap_xgboost/'
-    )
 
     data_dir = os.path.join(
-        input_dir,
+        base_data_dir,
         'updated_tumour_boundary_quadrants_double_are_removed_df.csv'
     )
 
@@ -2468,7 +2459,7 @@ def run_ecm_patient_level_nested_cv(
     # procedure. It is used exclusively for model/hyperparameter
     # selection.
     performance_file = (
-        'mean_inner_f1_score_plus_roc_auc_all_probability_thresholds.csv'
+        'mean_inner_f1_score_plus_roc_auc_all_probability_thresholds_ecm.csv'
     )
 
     performance_results_df = pd.read_csv(
@@ -2603,7 +2594,7 @@ def run_ecm_patient_level_nested_cv(
         index=False
     )
     
-def generate_optimal_inner_model_predictions(#was generate_inner_probabilities_for_optimum_inner_model
+def generate_optimal_ecm_inner_model_predictions(#was generate_inner_probabilities_for_optimum_inner_model
     bootstrap,
     fold_n,
     subfile_name,
@@ -2857,7 +2848,7 @@ def generate_optimal_inner_model_predictions(#was generate_inner_probabilities_f
     input_file = (
         f'outer_fold_{fold_n:05d}_'
         'mean_inner_f1_score_plus_roc_auc_'
-        'all_probability_thresholds.csv'
+        'all_probability_thresholds_ecm.csv'
     )
 
     input_path = os.path.join(
