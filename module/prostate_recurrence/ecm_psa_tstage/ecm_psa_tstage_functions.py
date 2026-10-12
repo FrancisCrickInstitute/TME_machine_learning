@@ -153,7 +153,7 @@ def load_inner_data(
             f"outer_fold_{outer_fold:05d}_"
             f"inner_fold_{inner_fold:05d}_"
             f"{subfile_name}_"
-            f"bootstrap_{bootstrap:03d}_"
+            f"shuffle_{bootstrap:02d}_"
             f"selected_model_from_inner_"
             f"psa_patient_probabilities_ecm_threshold.csv"
         )
@@ -163,7 +163,7 @@ def load_inner_data(
             f"outer_fold_{outer_fold:05d}_"
             f"inner_fold_{inner_fold:05d}_"
             f"{subfile_name}_"
-            f"bootstrap_{bootstrap:03d}_"
+            f"shuffle_{bootstrap:02d}_"
             f"selected_model_from_inner_"
             f"ecm_patient_probabilities.csv"
         )
@@ -258,7 +258,7 @@ def load_outer_data(
         psa_dir,
         f"outer_fold_{outer_fold:05d}_"
         f"{subfile_name}_"
-        f"bootstrap_{bootstrap:03d}_"
+        f"shuffle_{bootstrap:02d}_"
         f"selected_model_from_inner_"
         f"psa_patient_probabilities_ecm_threshold.csv"
     )
@@ -267,7 +267,7 @@ def load_outer_data(
         ecm_dir,
         f"outer_fold_{outer_fold:05d}_"
         f"{subfile_name}_"
-        f"bootstrap_{bootstrap:03d}_"
+        f"shuffle_{bootstrap:02d}_"
         f"selected_model_from_inner_"
         f"ecm_patient_probabilities.csv"
     )
@@ -503,7 +503,7 @@ def evaluate_roc_auc_by_ecm_probability_region(
         for outer_fold in outer_folds:
 
             print(
-                f"\nBootstrap {bootstrap} | "
+                f"\nBootstrap {bootstrap:02d} | "
                 f"Outer fold {outer_fold}"
             )
 
@@ -513,16 +513,15 @@ def evaluate_roc_auc_by_ecm_probability_region(
 
             psa_dir = os.path.join(
                 base_dir,
-                f"gleason_7_quad_1000_v8a_patient_level_logistic_"
-                f"removed_xgboost_psa_tstage_only_outer_fold_"
-                f"{bootstrap}"
+                f"gleason_7_patient_level_logistic_"
+                f"psa_tstage_shuffle_"
+                f"{bootstrap:02d}"
             )
 
             ecm_dir = os.path.join(
                 base_dir,
-                f"gleason_7_quad_1000_v8a_patient_level_logistic_"
-                f"plus_tile_threshold_f1score_removed_xgboost_"
-                f"outer_fold_{bootstrap}"
+                f"gleason_7_patient_level_logistic_"
+                f"ecm_xgboost_shuffle_{bootstrap:02d}"
             )
 
             # ====================================================
@@ -1160,7 +1159,7 @@ def evaluate_inner_psa_ecm_gate(
     save_name = (
         "outer_fold_test_"
         + str(outer_fold).zfill(5)
-        + "_psa_ecm_gate_separate_models_patient_level"
+        + "_psa_ecm_gate_patient_level"
     )
 
     filename = os.path.join(
@@ -1219,6 +1218,7 @@ def evaluate_inner_psa_ecm_gate(
 
 def evaluate_psa_ecm_gate_outer_fold(
     base_dir,
+    subfile_name,
     bootstrap,
     outer_fold
 ):
@@ -1236,7 +1236,7 @@ def evaluate_psa_ecm_gate_outer_fold(
     """
 
     print(
-        f"\nBootstrap {bootstrap} | "
+        f"\nBootstrap {bootstrap:02d} | "
         f"Outer fold {outer_fold}"
     )
 
@@ -1246,20 +1246,20 @@ def evaluate_psa_ecm_gate_outer_fold(
 
     psa_dir = os.path.join(
         base_dir,
-        f"gleason_7_quad_1000_v8a_patient_level_logistic_"
-        f"removed_xgboost_psa_tstage_only_outer_fold_{bootstrap}"
+        f"gleason_7_patient_level_logistic_"
+        f"psa_tstage_shuffle_{bootstrap:02d}"
     )
 
     ecm_dir = os.path.join(
         base_dir,
-        f"gleason_7_quad_1000_v8a_patient_level_logistic_"
-        f"plus_tile_threshold_f1score_removed_xgboost_outer_fold_{bootstrap}"
+        f"gleason_7_patient_level_logistic_"
+        f"ecm_xgboost_shuffle_{bootstrap:02d}"
     )
 
     run_dir = os.path.join(
         base_dir,
-        f"gleason_7_quad_1000_v8a_patient_level_psa_ecm_gate_"
-        f"separate_models_right_tail_final_v0_shuffle_{bootstrap}"
+        f"gleason_7_patient_level_psa_ecm_gate_"
+        f"right_tail_shuffle_{bootstrap:02d}"
     )
 
     os.makedirs(
@@ -1274,7 +1274,7 @@ def evaluate_psa_ecm_gate_outer_fold(
     save_name = (
         "outer_fold_test_"
         + str(outer_fold).zfill(5)
-        + "_psa_ecm_gate_separate_models_patient_level"
+        + "_psa_ecm_gate_patient_level"
     )
 
     
@@ -1345,7 +1345,7 @@ def evaluate_psa_ecm_gate_outer_fold(
     if best_row is None:
         raise ValueError(
             f"No eligible gate boundary found for "
-            f"bootstrap={bootstrap}, outer_fold={outer_fold}"
+            f"bootstrap={bootstrap:02d}, outer_fold={outer_fold}"
         )
 
     gate_boundary = float(
@@ -1362,7 +1362,7 @@ def evaluate_psa_ecm_gate_outer_fold(
         subfile_name,
         bootstrap,
         outer_fold
-    ):
+    )
 
     # ========================================================
     # CLASSIFICATION THRESHOLDS
@@ -1664,7 +1664,7 @@ def evaluate_psa_ecm_gate_outer_fold(
         (
             "outer_fold_test_"
             + str(outer_fold).zfill(5)
-            + "_psa_ecm_gate_separate_models_patient_predictions.csv"
+            + "_psa_ecm_gate_patient_predictions.csv"
         )
     )
 
